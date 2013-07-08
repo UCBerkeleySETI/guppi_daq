@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
+#include <pthread.h>
 #include "psrfits.h"
 #include "polyco.h"
 
@@ -87,8 +88,8 @@ int psrfits_create(struct psrfits *pf) {
     char template_file[1024];
     if (guppi_dir==NULL) {
         fprintf(stderr, 
-                "Error: GUPPI_DIR environment variable not set, exiting.\n");
-        exit(1);
+                "Error: GUPPI_DIR environment variable not set, thread exiting.\n");
+        pthread_exit(NULL);
     }
     printf("Opening file '%s' ", pf->filename);
     if (mode==search) { 
@@ -104,7 +105,7 @@ int psrfits_create(struct psrfits *pf) {
     if (*status) {
         fprintf(stderr, "Error creating psrfits file from template.\n");
         fits_report_error(stderr, *status);
-        exit(1);
+        pthread_exit(NULL);
     }
 
     // Go to the primary HDU

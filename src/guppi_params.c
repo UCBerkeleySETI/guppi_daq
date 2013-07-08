@@ -89,6 +89,15 @@ void set_obs_params_gb(char *buf,
                        struct psrfits *p) {
 
     // TODO could double-check telescope name first
+    // Load the values from status memory or fill-in with default values
+    get_int("FD_HAND", p->hdr.fd_hand, -1);
+    get_dbl("FD_SANG", p->hdr.fd_sang, 45.0);
+    get_dbl("FD_XYPH", p->hdr.fd_xyph, 0.0);
+    get_int("BE_PHASE", p->hdr.be_phase, -1);
+    get_dbl("BEAMFWHM", p->hdr.beam_FWHM, 65.0);  
+
+#if 0      
+    // Green Bank specific information -- not used.
     
     // Set the beamwidth
     if (strcmp("GBT", p->hdr.telescope)==0)
@@ -119,7 +128,7 @@ void set_obs_params_gb(char *buf,
         p->hdr.be_phase = -1;
     else 
         p->hdr.be_phase = -1;
-    
+#endif    
 }
 
 // Read networking parameters
