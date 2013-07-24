@@ -12,6 +12,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
+#include <sys/prctl.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <poll.h>
@@ -160,6 +161,8 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    prctl(PR_SET_PDEATHSIG,SIGTERM); /* Ensure that if parent process dies, to kill us too. */
+    
     /* Create FIFO */
     int rv = mkfifo(GUPPI_DAQ_CONTROL, 0666);
     if (rv!=0 && errno!=EEXIST) {
@@ -251,10 +254,12 @@ int main(int argc, char *argv[]) {
         fflush(stderr);
 
         // Wait for data on fifo
-        struct pollfd pfd;
-        pfd.fd = command_fifo;
-        pfd.events = POLLIN;
-        rv = poll(&pfd, 1, 1000);
+        struct pollfd pfd[2];
+        pfd[0].fd = command_fifo;
+        pfd[0].events = POLLIN;
+        pfd[1].fd = fileno(stdin);
+        pfd[1].events = POLLIN;
+        rv = poll(pfd, 2, 1000);
         if (rv==0) { continue; }
         else if (rv<0) {
             if (errno!=EINTR) perror("poll");
@@ -264,7 +269,7 @@ int main(int argc, char *argv[]) {
         // If we got POLLHUP, it means the other side closed its
         // connection.  Close and reopen the FIFO to clear this
         // condition.  Is there a better/recommended way to do this?
-        if (pfd.revents==POLLHUP) { 
+        if (pfd[0].revents==POLLHUP) { 
             close(command_fifo);
             command_fifo = open(GUPPI_DAQ_CONTROL, O_RDONLY | O_NONBLOCK);
             if (command_fifo<0) {
@@ -276,9 +281,22 @@ int main(int argc, char *argv[]) {
             continue;
         }
 
-        // Read the command
+        // clear the command
         memset(cmd, 0, MAX_CMD_LEN);
-        rv = read(command_fifo, cmd, MAX_CMD_LEN-1);
+        for (i=0; i<2; ++i)
+        {
+            rv = 0;
+            if (pfd[i].revents & POLLIN)
+            {
+                if (read(pfd[i].fd, cmd, MAX_CMD_LEN-1)<1)
+                    continue;
+                else
+                {
+                    rv = 1;
+                    break;
+                }
+            }
+        }
         if (rv==0) { continue; }
         else if (rv<0) {
             if (errno==EAGAIN) { continue; }
