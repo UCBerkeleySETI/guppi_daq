@@ -332,8 +332,12 @@ void guppi_read_obs_params(char *buf,
         sprintf(base, "%s_%5d_%s_%04d", backend, p->hdr.start_day, 
                 p->hdr.source, p->hdr.scan_number);
     }
+#ifdef NO_PROJECT_DIR
     sprintf(p->basefilename, "%s/%s", dir, base);
-
+#else
+    // Use a $DATADIR/$PROJID/$BACKEND prefix for files
+    sprintf(p->basefilename, "%s/%s/%s/%s", dir, p->hdr.project_id, p->hdr.backend, base);
+#endif
     { // Date and time of start
         int YYYY, MM, DD, h, m;
         double s;
