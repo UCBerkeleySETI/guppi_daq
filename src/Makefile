@@ -1,11 +1,7 @@
 OPT64 = /home/pulsar64
-#CUDA = /opt/gpu/cuda
-CUDA=/opt/local/cuda42
-#CFLAGS = -g -O3 -Wall -DFOLD_USE_INTRINSICS -I$(OPT64)/include -I$(CUDA)/include
 CFLAGS = -g -O3 -Wall -I$(OPT64)/include -I$(CUDA)/include
 CFLAGS+= -DUSE_VEGAS_STATUSID
-NVCCFLAGS = -g -arch sm_13 -I$(CUDA)/include -I$(OPT64)/include
-#NVCCFLAGS = -g -ccbin $(CUDA)/gcc -I$(CUDA)/include -I$(OPT64)/include
+NVCCFLAGS = -g -arch compute_35 -code=sm_35 -I$(CUDA)/include -I$(OPT64)/include
 PROGS = check_guppi_databuf check_guppi_status clean_guppi_shmem \
 	test_udp_recv test_psrfits test_psrfits_read \
 	fix_psrfits_polyco \
