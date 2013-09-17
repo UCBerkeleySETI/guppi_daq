@@ -4,6 +4,44 @@
  */
 #include "dedisperse_gpu.h"
 
+/** Initialize the GPU at program startup to avoid delays when starting
+ *  data acquisition. This should be called by main().
+ */
+#ifndef CUDA_SAFE_CALL
+#define CUDA_SAFE_CALL(call) \
+do { \
+    cudaError_t err = call; \
+    if (cudaSuccess != err) { \
+        fprintf (stderr, "Cuda error in file '%s' in line %i : %s.", \
+                 __FILE__, __LINE__, cudaGetErrorString(err) ); \
+        exit(EXIT_FAILURE); \
+    } \
+} while (0)
+#endif
+extern "C"
+int init_cuda_context(void)
+{
+    int iDevCount = 0;
+
+    /* since CUDASafeCall() calls cudaGetErrorString(),
+       it should not be used here - will cause crash if no CUDA device is
+       found */
+    (void) cudaGetDeviceCount(&iDevCount);
+    if (0 == iDevCount)
+    {
+        (void) fprintf(stderr, "ERROR: No CUDA-capable device found!\n");
+        return EXIT_FAILURE;
+    }
+
+    /* just use the first device */
+    // printf("pfb_gpu.cu: CUDA_SAFE_CALL(cudaSetDevice(0))\n");
+    CUDA_SAFE_CALL(cudaSetDevice(0));
+    // printf("pfb_gpu.cu: CUDA_SAFE_CALL(cudaFree(0)\n");
+    CUDA_SAFE_CALL(cudaFree(0));
+    printf("#################### GPU CONTEXT INITIALIZED ####################\n");
+    return EXIT_SUCCESS;
+}
+
 /* CUDA kernel to convert bytes to floats.  Also splits incoming
  * data into two polarizations (assuming polns are interleaved
  * in the raw data).

@@ -90,6 +90,7 @@ void dedisperse(struct dedispersion_setup *s, int ichan,
         const unsigned char *in, float *out);
 void free_dedispersion(struct dedispersion_setup *s);
 void print_timing_report(struct dedispersion_setup *s);
+int init_cuda_context(void);
 #ifdef __cplusplus
 }
 #endif

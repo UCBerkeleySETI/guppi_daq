@@ -25,6 +25,7 @@
 #include "guppi_status.h"
 #include "guppi_databuf.h"
 #include "guppi_params.h"
+#include "dedisperse_gpu.h"
 
 #include "guppi_thread_main.h"
 
@@ -224,6 +225,9 @@ int main(int argc, char *argv[]) {
     srv_run=1;
     signal(SIGINT, srv_cc);
     signal(SIGTERM, srv_quit);
+
+    /* Initialize the GPU */
+    init_cuda_context();
 
     /* Loop over recv'd commands, process them */
     int cmd_wait=1;
