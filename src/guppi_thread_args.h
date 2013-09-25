@@ -8,12 +8,13 @@
 #include <sys/time.h>
 #include <math.h>
 struct guppi_thread_args {
+    pthread_cond_t finished_c;
+    pthread_mutex_t finished_m;
     int input_buffer;
     int output_buffer;
     int priority;
     int finished;
-    pthread_cond_t finished_c;
-    pthread_mutex_t finished_m;
+    cpu_set_t cpuset;
 };
 void guppi_thread_args_init(struct guppi_thread_args *a);
 void guppi_thread_args_destroy(struct guppi_thread_args *a);

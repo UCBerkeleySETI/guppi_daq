@@ -36,13 +36,12 @@ extern void guppi_read_obs_params(char *buf,
 void guppi_null_thread(void *_args) {
 
     int rv;
-#if 0 
+    /* Get args */
+    struct guppi_thread_args *args = (struct guppi_thread_args *)_args;
+
+#if 1
     /* Set cpu affinity */
-    cpu_set_t cpuset, cpuset_orig;
-    sched_getaffinity(0, sizeof(cpu_set_t), &cpuset_orig);
-    CPU_ZERO(&cpuset);
-    CPU_SET(1, &cpuset);
-    rv = sched_setaffinity(0, sizeof(cpu_set_t), &cpuset);
+    rv = sched_setaffinity(0, sizeof(cpu_set_t), &args->cpuset);
     if (rv<0) { 
         guppi_error("guppi_null_thread", "Error setting cpu affinity.");
         perror("sched_setaffinity");
@@ -55,9 +54,6 @@ void guppi_null_thread(void *_args) {
         guppi_error("guppi_null_thread", "Error setting priority level.");
         perror("set_priority");
     }
-
-    /* Get args */
-    struct guppi_thread_args *args = (struct guppi_thread_args *)_args;
 
     /* Attach to status shared mem area */
     struct guppi_status st;

@@ -8,6 +8,10 @@
 
 #include "guppi_thread_args.h"
 
+#define NET_CORE 1
+#define DISK_CORE 2
+#define SYS_CORE 0
+
 /* Control-C handler */
 int run=1;
 void cc(int sig) { run=0; }

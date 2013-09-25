@@ -42,20 +42,16 @@ int safe_fclose(FILE *f) {
 }
 
 void guppi_rawdisk_thread(void *_args) {
-
+    /* Get args */
+    struct guppi_thread_args *args = (struct guppi_thread_args *)_args;
+    
     /* Set cpu affinity */
-    cpu_set_t cpuset, cpuset_orig;
-    sched_getaffinity(0, sizeof(cpu_set_t), &cpuset_orig);
-    CPU_ZERO(&cpuset);
-    CPU_SET(1, &cpuset);
-    int rv = sched_setaffinity(0, sizeof(cpu_set_t), &cpuset);
+    int rv = sched_setaffinity(0, sizeof(cpu_set_t), &args->cpuset);
     if (rv<0) { 
         guppi_error("guppi_rawdisk_thread", "Error setting cpu affinity.");
         perror("sched_setaffinity");
     }
 
-    /* Get args */
-    struct guppi_thread_args *args = (struct guppi_thread_args *)_args;
 
     /* Set priority */
     rv = setpriority(PRIO_PROCESS, 0, 0);

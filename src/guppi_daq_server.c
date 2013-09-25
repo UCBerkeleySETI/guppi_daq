@@ -4,6 +4,7 @@
  * and spawn datataking threads as appropriate.  Meant for
  * communication w/ guppi controller, etc.
  */
+#define _GNU_SOURCE 1
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -19,6 +20,7 @@
 #include <getopt.h>
 #include <errno.h>
 #include <time.h>
+#include <sched.h>
 
 #include "fitshead.h"
 #include "guppi_error.h"
@@ -28,6 +30,7 @@
 #include "dedisperse_gpu.h"
 
 #include "guppi_thread_main.h"
+
 
 #define GUPPI_DAQ_CONTROL "/tmp/guppi_daq_control"
 
@@ -53,6 +56,7 @@ void *guppi_dedisp_ds_thread(void *args);
 void *guppi_psrfits_thread(void *args);
 void *guppi_null_thread(void *args);
 void *guppi_rawdisk_thread(void *args);
+int   setup_privileges();
 
 /* Useful thread functions */
 
@@ -68,6 +72,12 @@ void init_search_mode(struct guppi_thread_args *args, int *nthread) {
     guppi_thread_args_init(&args[1]); // disk
     args[0].output_buffer = 1;
     args[1].input_buffer = args[0].output_buffer;
+    /* Place net thread on core */
+    CPU_ZERO(&args[0].cpuset);
+    CPU_SET(NET_CORE, &args[0].cpuset);
+    /* Place disk thread */
+    CPU_ZERO(&args[1].cpuset);
+    CPU_SET(DISK_CORE, &args[1].cpuset);
     *nthread = 2;
 }
 
@@ -79,6 +89,15 @@ void init_fold_mode(struct guppi_thread_args *args, int *nthread) {
     args[1].input_buffer = args[0].output_buffer;
     args[1].output_buffer = 2;
     args[2].input_buffer = args[1].output_buffer;
+    /* Place net thread on core */
+    CPU_ZERO(&args[0].cpuset);
+    CPU_SET(NET_CORE, &args[0].cpuset);   
+    /* Place fold core on anything but the net and disk cores */
+    CPU_CLR(DISK_CORE, &args[1].cpuset);  
+    CPU_CLR(NET_CORE, &args[1].cpuset);      
+    /* Place disk thread */
+    CPU_ZERO(&args[2].cpuset);
+    CPU_SET(DISK_CORE, &args[2].cpuset);
     *nthread = 3;
 }
 
@@ -87,6 +106,12 @@ void init_monitor_mode(struct guppi_thread_args *args, int *nthread) {
     guppi_thread_args_init(&args[1]); // null
     args[0].output_buffer = 1;
     args[1].input_buffer = args[0].output_buffer;
+    /* Place net thread on core */
+    CPU_ZERO(&args[0].cpuset);
+    CPU_SET(NET_CORE, &args[0].cpuset);   
+    /* Place null thread */
+    CPU_ZERO(&args[1].cpuset);
+    CPU_SET(DISK_CORE, &args[1].cpuset);    
     *nthread = 2;
 }
 
@@ -163,6 +188,10 @@ int main(int argc, char *argv[]) {
     }
 
     prctl(PR_SET_PDEATHSIG,SIGTERM); /* Ensure that if parent process dies, to kill us too. */
+    /* Processing to retain CAP_SYS_NICE for scheduler/core pinning operations,
+       after dropping root privileges.
+    */
+    setup_privileges();
     
     /* Create FIFO */
     int rv = mkfifo(GUPPI_DAQ_CONTROL, 0666);

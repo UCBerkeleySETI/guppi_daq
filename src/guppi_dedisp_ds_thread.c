@@ -48,18 +48,12 @@ void guppi_dedisp_ds_thread(void *_args) {
     struct guppi_thread_args *args = (struct guppi_thread_args *)_args;
 
     int rv;
-#if 0 
     /* Set cpu affinity */
-    cpu_set_t cpuset, cpuset_orig;
-    sched_getaffinity(0, sizeof(cpu_set_t), &cpuset_orig);
-    CPU_ZERO(&cpuset);
-    CPU_SET(1, &cpuset);
-    rv = sched_setaffinity(0, sizeof(cpu_set_t), &cpuset);
+    rv = sched_setaffinity(0, sizeof(cpu_set_t), &args->cpuset);
     if (rv<0) { 
         guppi_error("guppi_dedisp_thread", "Error setting cpu affinity.");
         perror("sched_setaffinity");
     }
-#endif
 
     /* Set priority */
     rv = setpriority(PRIO_PROCESS, 0, args->priority);

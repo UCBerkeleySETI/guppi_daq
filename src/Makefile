@@ -10,7 +10,7 @@ OBJS  = guppi_status.o guppi_databuf.o guppi_udp.o guppi_error.o \
 	guppi_params.o guppi_time.o guppi_thread_args.o \
 	write_psrfits.o read_psrfits.o misc_utils.o \
 	fold.o polyco.o hget.o hput.o sla.o downsample.o \
-	dedisperse_utils.o quantization.o
+	dedisperse_utils.o quantization.o privilege_management.o
 THREAD_PROGS = test_net_thread guppi_daq guppi_daq_fold 
 THREAD_OBJS  = guppi_net_thread.o guppi_net_thread_codd.o \
 	       guppi_rawdisk_thread.o \
@@ -18,7 +18,7 @@ THREAD_OBJS  = guppi_net_thread.o guppi_net_thread_codd.o \
 	       guppi_null_thread.o
 CUDA_OBJS = guppi_dedisp_thread.o guppi_dedisp_ds_thread.o \
 	    fold_gpu.o downsample_gpu.o dedisperse_gpu.o
-LIBS = -L$(OPT64)/lib -lcfitsio -L$(PRESTO)/lib -lsla -lm -lpthread
+LIBS = -L$(OPT64)/lib -lcfitsio -L$(PRESTO)/lib -lsla -lm -lpthread -lcap
 CUDA_LIBS = -L$(CUDA)/lib64 -lcufft -lcuda -lcudart -lrt -lm
 all: $(PROGS) $(THREAD_PROGS) guppi_daq psrfits_subband \
 	test_dedisp_thread guppi_daq_dedisp guppi_daq_server

@@ -5,6 +5,8 @@ void guppi_thread_args_init(struct guppi_thread_args *a) {
     a->finished=0;
     pthread_cond_init(&a->finished_c,NULL);
     pthread_mutex_init(&a->finished_m,NULL);
+    /* By default, allow all cores currently allowed */
+    sched_getaffinity(0, sizeof(cpu_set_t), &a->cpuset);
 }
 
 void guppi_thread_args_destroy(struct guppi_thread_args *a) {
