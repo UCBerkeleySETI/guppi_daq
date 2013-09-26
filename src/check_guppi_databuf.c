@@ -6,6 +6,10 @@
 #include <stdlib.h>
 #include <getopt.h>
 #include <string.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <sys/sem.h>
+#include <errno.h>
 
 #include "fitshead.h"
 #include "guppi_error.h"
@@ -19,6 +23,7 @@ void usage() {
             "  -h, --help\n"
             "  -q, --quiet\n"
             "  -c, --create\n"
+            "  -d, --delete\n"            
             "  -i n, --id=n  (1)\n"
             "  -s n, --size=n (32M)\n"
             "  -n n, --nblock=n (24)\n"
@@ -32,6 +37,7 @@ int main(int argc, char *argv[]) {
         {"help",   0, NULL, 'h'},
         {"quiet",  0, NULL, 'q'},
         {"create", 0, NULL, 'c'},
+        {"delete", 0, NULL, 'd'},        
         {"id",     1, NULL, 'i'},
         {"size",   1, NULL, 's'},
         {"nblock", 1, NULL, 'n'},
@@ -43,7 +49,8 @@ int main(int argc, char *argv[]) {
     int db_id=1;
     int blocksize = 32;
     int nblock = 24;
-    while ((opt=getopt_long(argc,argv,"hqci:s:n:",long_opts,&opti))!=-1) {
+    int deletebuf=0;
+    while ((opt=getopt_long(argc,argv,"hqcdi:s:n:",long_opts,&opti))!=-1) {
         switch (opt) {
             case 'c':
                 create=1;
@@ -60,6 +67,10 @@ int main(int argc, char *argv[]) {
             case 'n':
                 nblock = atoi(optarg);
                 break;
+            case 'd':
+                deletebuf=1;
+                create=0;
+                break;                
             case 'h':
             default:
                 usage();
@@ -85,6 +96,41 @@ int main(int argc, char *argv[]) {
                     db_id);
             exit(1);
         }
+        if (deletebuf)
+        {
+            /* attach worked so it exists. Now clear it and detach in
+               preparation to delete.
+            */
+            int shmid, semid, rtnval;
+            guppi_databuf_clear(db);          
+            shmid = db->shmid;
+            semid = db->semid;
+            rtnval = 0;
+            if (shmctl(shmid,IPC_RMID, 0) != 0)
+            {
+                perror("removal of buffer failed:");
+                rtnval = -1;
+            }
+            printf("buffer deleted successfully\n");
+            if (shmdt(db) != 0)
+            {
+                perror("shm detach failed:");
+                // silently fail
+            }
+            if (semctl(semid,IPC_RMID, 0) != 0)
+            {
+                perror("removal of semaphores failed:");
+                rtnval = -1;
+            }
+            printf("sems deleted successfully\n");            
+            exit (rtnval);
+        }
+    }
+    
+    if (quiet)
+    {
+        /* skip the verbose stats */
+        exit(0);
     }
 
     /* Print basic info */
