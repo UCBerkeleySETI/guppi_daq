@@ -44,8 +44,14 @@ def cardlist_from_string(str):
     return cardlist
 
 
-GUPPI_STATUS_KEY = 16783408
-GUPPI_STATUS_SEMID = "/guppi_status"
+#GUPPI_STATUS_KEY = 16783408
+#GUPPI_STATUS_SEMID = "/guppi_status"
+
+# In DIBAS we use a common status shared memory area:
+VEGAS_STATUS_KEY = int('0x01001840', 16)
+VEGAS_STATUS_SEMID = "/vegas_status"
+GUPPI_STATUS_KEY = VEGAS_STATUS_KEY
+GUPPI_STATUS_SEMID = VEGAS_STATUS_SEMID
 
 class guppi_status:
 
