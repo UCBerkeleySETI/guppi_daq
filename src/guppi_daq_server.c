@@ -60,6 +60,32 @@ int   setup_privileges();
 
 /* Useful thread functions */
 
+
+// keyword listing and default values.
+struct KeywordValues keywords[] =
+{
+    { "net_thread_mask", 0x0 },
+    { "net_thread_codd_mask", 0x0 },
+    { "dedisp_thread_mask",   0x0 },
+    { "dedisp_ds_thread_mask", 0x0  },
+    { "fold_thread_mask",  0x0 },
+    { "psrfits_thread_mask", 0x0 },
+    { "rawdisk_thread_mask", 0x0 },
+    { "null_thread_mask", 0x0 },
+    
+    { "net_thread_priority", 0x0 },
+    { "net_thread_codd_priority", 0x0 },
+    { "dedisp_thread_priority",   0x0 },
+    { "dedisp_ds_thread_priority", 0x0  },
+    { "fold_thread_priority",  0x0 },
+    { "psrfits_thread_priority", 0x0 },
+    { "rawdisk_thread_priority", 0x0 },
+    { "null_thread_priority", 0x0 },
+    { NULL, 0x0 },
+};
+    
+
+
 int check_thread_exit(struct guppi_thread_args *args, int nthread) {
     int i, rv=0;
     for (i=0; i<nthread; i++) 
@@ -72,12 +98,6 @@ void init_search_mode(struct guppi_thread_args *args, int *nthread) {
     guppi_thread_args_init(&args[1]); // disk
     args[0].output_buffer = 1;
     args[1].input_buffer = args[0].output_buffer;
-    /* Place net thread on core */
-    CPU_ZERO(&args[0].cpuset);
-    CPU_SET(NET_CORE, &args[0].cpuset);
-    /* Place disk thread */
-    CPU_ZERO(&args[1].cpuset);
-    CPU_SET(DISK_CORE, &args[1].cpuset);
     *nthread = 2;
 }
 
@@ -89,15 +109,6 @@ void init_fold_mode(struct guppi_thread_args *args, int *nthread) {
     args[1].input_buffer = args[0].output_buffer;
     args[1].output_buffer = 2;
     args[2].input_buffer = args[1].output_buffer;
-    /* Place net thread on core */
-    CPU_ZERO(&args[0].cpuset);
-    CPU_SET(NET_CORE, &args[0].cpuset);   
-    /* Place fold core on anything but the net and disk cores */
-    CPU_CLR(DISK_CORE, &args[1].cpuset);  
-    CPU_CLR(NET_CORE, &args[1].cpuset);      
-    /* Place disk thread */
-    CPU_ZERO(&args[2].cpuset);
-    CPU_SET(DISK_CORE, &args[2].cpuset);
     *nthread = 3;
 }
 
@@ -105,19 +116,20 @@ void init_monitor_mode(struct guppi_thread_args *args, int *nthread) {
     guppi_thread_args_init(&args[0]); // net
     guppi_thread_args_init(&args[1]); // null
     args[0].output_buffer = 1;
-    args[1].input_buffer = args[0].output_buffer;
-    /* Place net thread on core */
-    CPU_ZERO(&args[0].cpuset);
-    CPU_SET(NET_CORE, &args[0].cpuset);   
-    /* Place null thread */
-    CPU_ZERO(&args[1].cpuset);
-    CPU_SET(DISK_CORE, &args[1].cpuset);    
+    args[1].input_buffer = args[0].output_buffer;   
     *nthread = 2;
 }
 
 void start_search_mode(struct guppi_thread_args *args, pthread_t *ids) {
     // TODO error checking...
     int rv;
+    /* Place net thread on core */
+    mask_to_cpuset(&args[0].cpuset, get_config_key_value("net_thread_mask", keywords));
+    args[0].priority = get_config_key_value("net_thread_priority", keywords);
+    /* Place disk thread */
+    mask_to_cpuset(&args[1].cpuset, get_config_key_value("psr_thread_mask", keywords));
+    args[1].priority = get_config_key_value("psr_thread_priority", keywords);
+    
     rv = pthread_create(&ids[0], NULL, guppi_net_thread, (void*)&args[0]);
     rv = pthread_create(&ids[1], NULL, guppi_psrfits_thread, (void*)&args[1]);
 }
@@ -125,6 +137,16 @@ void start_search_mode(struct guppi_thread_args *args, pthread_t *ids) {
 void start_fold_mode(struct guppi_thread_args *args, pthread_t *ids) {
     // TODO error checking...
     int rv;
+    /* Place net thread on core */
+    mask_to_cpuset(&args[0].cpuset, get_config_key_value("net_thread_mask", keywords));
+    args[0].priority = get_config_key_value("net_thread_priority", keywords);
+    /* Place fold thread */
+    mask_to_cpuset(&args[1].cpuset, get_config_key_value("fold_thread_mask", keywords));
+    args[1].priority = get_config_key_value("fold_thread_priority", keywords);
+    /* Place disk thread */
+    mask_to_cpuset(&args[2].cpuset, get_config_key_value("psr_thread_mask", keywords));
+    args[2].priority = get_config_key_value("psr_thread_priority", keywords);
+    
     rv = pthread_create(&ids[0], NULL, guppi_net_thread, (void*)&args[0]);
     rv = pthread_create(&ids[1], NULL, guppi_fold_thread, (void*)&args[1]);
     rv = pthread_create(&ids[2], NULL, guppi_psrfits_thread, (void*)&args[2]);
@@ -133,6 +155,16 @@ void start_fold_mode(struct guppi_thread_args *args, pthread_t *ids) {
 void start_coherent_fold_mode(struct guppi_thread_args *args, pthread_t *ids) {
     // TODO error checking...
     int rv;
+    /* Place net thread on core */
+    mask_to_cpuset(&args[0].cpuset, get_config_key_value("net_thread_codd_mask", keywords));
+    args[0].priority = get_config_key_value("net_thread_codd_priority", keywords);
+    /* Place dedisp thread */
+    mask_to_cpuset(&args[1].cpuset, get_config_key_value("dedisp_thread_mask", keywords));
+    args[1].priority = get_config_key_value("dedisp_thread_priority", keywords);
+    /* Place disk thread */
+    mask_to_cpuset(&args[2].cpuset, get_config_key_value("psr_thread_mask", keywords));
+    args[2].priority = get_config_key_value("psr_thread_priority", keywords);
+      
     rv = pthread_create(&ids[0], NULL, guppi_net_thread_codd, (void*)&args[0]);
     rv = pthread_create(&ids[1], NULL, guppi_dedisp_thread, (void*)&args[1]);
     rv = pthread_create(&ids[2], NULL, guppi_psrfits_thread, (void*)&args[2]);
@@ -141,6 +173,16 @@ void start_coherent_fold_mode(struct guppi_thread_args *args, pthread_t *ids) {
 void start_coherent_search_mode(struct guppi_thread_args *args, pthread_t *ids) {
     // TODO error checking...
     int rv;
+    /* Place net thread on core */
+    mask_to_cpuset(&args[0].cpuset, get_config_key_value("net_thread_codd_mask", keywords));
+    args[0].priority = get_config_key_value("net_thread_codd_priority", keywords);
+    /* Place dedisp thread */
+    mask_to_cpuset(&args[1].cpuset, get_config_key_value("dedisp_ds_thread_mask", keywords));
+    args[1].priority = get_config_key_value("dedisp_ds_thread_priority", keywords);
+    /* Place disk thread */
+    mask_to_cpuset(&args[2].cpuset, get_config_key_value("psr_thread_mask", keywords));
+    args[2].priority = get_config_key_value("psr_thread_priority", keywords);
+    
     rv = pthread_create(&ids[0], NULL, guppi_net_thread_codd, (void*)&args[0]);
     rv = pthread_create(&ids[1], NULL, guppi_dedisp_ds_thread, (void*)&args[1]);
     rv = pthread_create(&ids[2], NULL, guppi_psrfits_thread, (void*)&args[2]);
@@ -149,6 +191,13 @@ void start_coherent_search_mode(struct guppi_thread_args *args, pthread_t *ids) 
 void start_monitor_mode(struct guppi_thread_args *args, pthread_t *ids) {
     // TODO error checking...
     int rv;
+    /* Place net thread on core */
+    mask_to_cpuset(&args[0].cpuset, get_config_key_value("net_thread_mask", keywords));
+    args[0].priority = get_config_key_value("net_thread_priority", keywords);
+    /* Place null thread */
+    mask_to_cpuset(&args[1].cpuset, get_config_key_value("null_thread_mask", keywords));
+    args[1].priority = get_config_key_value("null_thread_priority", keywords);
+    
     rv = pthread_create(&ids[0], NULL, guppi_net_thread, (void*)&args[0]);
     rv = pthread_create(&ids[1], NULL, guppi_null_thread, (void*)&args[1]);
 }
@@ -156,6 +205,13 @@ void start_monitor_mode(struct guppi_thread_args *args, pthread_t *ids) {
 void start_raw_mode(struct guppi_thread_args *args, pthread_t *ids) {
     // TODO error checking...
     int rv;
+    /* Place net thread on core */
+    mask_to_cpuset(&args[0].cpuset, get_config_key_value("net_thread_mask", keywords));
+    args[0].priority = get_config_key_value("net_thread_priority", keywords);
+    /* Place null thread */
+    mask_to_cpuset(&args[1].cpuset, get_config_key_value("rawdisk_thread_mask", keywords));
+    args[1].priority = get_config_key_value("rawdisk_thread_priority", keywords);
+    
     rv = pthread_create(&ids[0], NULL, guppi_net_thread_codd, (void*)&args[0]);
     rv = pthread_create(&ids[1], NULL, guppi_rawdisk_thread, (void*)&args[1]);
 }
@@ -193,6 +249,8 @@ int main(int argc, char *argv[]) {
     */
     setup_privileges();
     
+    read_thread_configuration(keywords);
+    
     /* Create FIFO */
     int rv = mkfifo(GUPPI_DAQ_CONTROL, 0666);
     if (rv!=0 && errno!=EEXIST) {
@@ -212,6 +270,7 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
+    
     /* Attach to shared memory buffers */
     struct guppi_status stat;
     struct guppi_databuf *dbuf_net=NULL, *dbuf_fold=NULL;

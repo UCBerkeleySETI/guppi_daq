@@ -69,8 +69,16 @@ void guppi_psrfits_thread(void *_args) {
     }
 
     /* Set priority */
-    rv = setpriority(PRIO_PROCESS, 0, args->priority);
-    if (rv<0) {
+    // rv = setpriority(PRIO_PROCESS, 0, args->priority);
+    rv=0;
+    if (args->priority != 0)
+    {
+        struct sched_param priority_param;
+        priority_param.sched_priority = args->priority;
+        rv = pthread_setschedparam(pthread_self(), SCHED_FIFO, &priority_param);
+    }
+    
+    if (rv!=0) {
         guppi_error("guppi_psrfits_thread", "Error setting priority level.");
         perror("set_priority");
     }

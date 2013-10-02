@@ -54,8 +54,16 @@ void guppi_rawdisk_thread(void *_args) {
 
 
     /* Set priority */
-    rv = setpriority(PRIO_PROCESS, 0, 0);
-    if (rv<0) {
+    // rv = setpriority(PRIO_PROCESS, 0, 0);
+    rv=0;
+    if (args->priority != 0)
+    {
+        struct sched_param priority_param;
+        priority_param.sched_priority = args->priority;
+        rv = pthread_setschedparam(pthread_self(), SCHED_FIFO, &priority_param);
+    }    
+    
+    if (rv!=0) {
         guppi_error("guppi_rawdisk_thread", "Error setting priority level.");
         perror("set_priority");
     }
