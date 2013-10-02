@@ -414,6 +414,7 @@ void *guppi_net_thread_codd(void *_args) {
                     (double)fblock->npacket;
 
             guppi_status_lock_safe(&st);
+            hputi4(st.buf, "PKTIDX", fblock->packet_idx);                          
             hputr8(st.buf, "DROPAVG", drop_frac_avg);
             hputr8(st.buf, "DROPTOT", 
                     npacket_total ? 

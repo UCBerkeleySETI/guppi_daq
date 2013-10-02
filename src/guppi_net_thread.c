@@ -279,6 +279,7 @@ void *guppi_net_thread(void *_args) {
 
             /* Put drop stats in general status area */
             guppi_status_lock_safe(&st);
+            hputi4(st.buf, "PKTIDX", curblock_seq_num);                            
             hputr8(st.buf, "DROPAVG", drop_frac_avg);
             hputr8(st.buf, "DROPTOT", 
                     npacket_total ? 
