@@ -62,19 +62,23 @@ void guppi_psrfits_thread(void *_args) {
     pthread_cleanup_push((void *)guppi_thread_set_finished, args);
     
     /* Set cpu affinity */
-    cpu_set_t cpuset, cpuset_orig;
-    sched_getaffinity(0, sizeof(cpu_set_t), &cpuset_orig);
-    CPU_ZERO(&cpuset);
-    CPU_SET(1, &cpuset);
-    int rv = sched_setaffinity(0, sizeof(cpu_set_t), &cpuset);
+    int rv = sched_setaffinity(0, sizeof(cpu_set_t), &args->cpuset);
     if (rv<0) { 
         guppi_error("guppi_psrfits_thread", "Error setting cpu affinity.");
         perror("sched_setaffinity");
     }
 
     /* Set priority */
-    rv = setpriority(PRIO_PROCESS, 0, args->priority);
-    if (rv<0) {
+    // rv = setpriority(PRIO_PROCESS, 0, args->priority);
+    rv=0;
+    if (args->priority != 0)
+    {
+        struct sched_param priority_param;
+        priority_param.sched_priority = args->priority;
+        rv = pthread_setschedparam(pthread_self(), SCHED_FIFO, &priority_param);
+    }
+    
+    if (rv!=0) {
         guppi_error("guppi_psrfits_thread", "Error setting priority level.");
         perror("set_priority");
     }
