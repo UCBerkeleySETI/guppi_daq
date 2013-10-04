@@ -16,6 +16,10 @@
 #include "guppi_udp.h"
 #include "guppi_databuf.h"
 #include "guppi_error.h"
+#ifdef USE_SSE_TRANSPOSE
+#include "sse_transpose.h"
+#endif
+
 
 int guppi_udp_init(struct guppi_udp_params *p) {
 
@@ -213,6 +217,17 @@ void guppi_udp_packet_data_copy_transpose(char *databuf, int nchan,
     char *iptr, *optr;
     unsigned isamp,ichan;
     iptr = guppi_udp_packet_data(p);
+#ifdef USE_SSE_TRANSPOSE
+    static int debugfirst=1;
+    if (debugfirst)
+    {
+        printf("samp_per_block=%d, chan_per_packet=%d\n", samp_per_block,chan_per_packet);
+        debugfirst=0;
+    } 
+    optr = databuf + bytes_per_sample * (block_pkt_idx*samp_per_packet);
+    transpose((float *)iptr, (float *)optr, 1, chan_per_packet, samp_per_block);
+#else
+
     for (isamp=0; isamp<samp_per_packet; isamp++) {
         optr = databuf + bytes_per_sample * (block_pkt_idx*samp_per_packet 
                 + isamp);
@@ -222,6 +237,7 @@ void guppi_udp_packet_data_copy_transpose(char *databuf, int nchan,
             optr += bytes_per_sample*samp_per_block;
         }
     }
+#endif
 
 #if 0 
     // Old version...

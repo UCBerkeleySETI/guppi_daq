@@ -1,5 +1,5 @@
 CFLAGS = -g -O3 -Wall -I$(OPT64)/include -I$(CUDA)/include
-CFLAGS+= -DUSE_VEGAS_STATUSID
+CFLAGS+= -DUSE_VEGAS_STATUSID # -DUSE_SSE_TRANSPOSE -msse2
 NVCCFLAGS = -O3 -g -arch compute_35 -code=sm_35 -I$(CUDA)/include -I$(OPT64)/include
 PROGS = check_guppi_databuf check_guppi_status clean_guppi_shmem \
 	test_udp_recv test_psrfits test_psrfits_read \
