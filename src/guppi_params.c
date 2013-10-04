@@ -233,7 +233,7 @@ void guppi_read_obs_params(char *buf,
                            struct guppi_params *g, 
                            struct psrfits *p)
 {
-    char base[200], dir[200];
+    char base[200], dir[200], banknam[64];
 
     // Software data-stream modification params
     get_int("DS_TIME", p->hdr.ds_time_fact, 1); // Time down-sampling
@@ -270,6 +270,7 @@ void guppi_read_obs_params(char *buf,
     get_str("POL_TYPE", p->hdr.poln_order, 16, "Unknown");
     get_int("SCANNUM", p->hdr.scan_number, 1);
     get_str("DATADIR", dir, 200, ".");
+    get_str("BANKNAM", banknam, sizeof(banknam), ".");
     if (strcmp(p->hdr.poln_order, "AA+BB")==0 ||
         strcmp(p->hdr.poln_order, "INTEN")==0)
         p->hdr.summed_polns = 1;
@@ -335,8 +336,11 @@ void guppi_read_obs_params(char *buf,
 #ifdef NO_PROJECT_DIR
     sprintf(p->basefilename, "%s/%s", dir, base);
 #else
-    // Use a $DATADIR/$PROJID/$BACKEND prefix for files
-    sprintf(p->basefilename, "%s/%s/%s/%s", dir, p->hdr.project_id, p->hdr.backend, base);
+    // Use a $DATADIR/$PROJID/$BACKEND/$BANK prefix for files
+    if (strnlen(banknam, sizeof(banknam)) < 1)
+        snprintf(banknam, sizeof(banknam), ".");
+    sprintf(p->basefilename, "%s/%s/%s/%c/%s", dir, p->hdr.project_id, p->hdr.backend, 
+            banknam[strnlen(banknam, sizeof(banknam))-1], base);
 #endif
     { // Date and time of start
         int YYYY, MM, DD, h, m;
