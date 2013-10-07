@@ -216,18 +216,15 @@ void guppi_udp_packet_data_copy_transpose(char *databuf, int nchan,
 
     char *iptr, *optr;
     unsigned isamp,ichan;
-    iptr = guppi_udp_packet_data(p);
-#ifdef USE_SSE_TRANSPOSE
     static int debugfirst=1;
     if (debugfirst)
     {
-        printf("samp_per_block=%d, chan_per_packet=%d\n", samp_per_block,chan_per_packet);
+        printf("samp_per_block=%d, chan_per_packet=%d samp_per_packet=%d block_pkt_idx=%d\n", 
+               samp_per_block,chan_per_packet, samp_per_packet, block_pkt_idx);
         debugfirst=0;
     } 
-    optr = databuf + bytes_per_sample * (block_pkt_idx*samp_per_packet);
-    transpose((float *)iptr, (float *)optr, 1, chan_per_packet, samp_per_block);
-#else
-
+#if 0
+    iptr = guppi_udp_packet_data(p);
     for (isamp=0; isamp<samp_per_packet; isamp++) {
         optr = databuf + bytes_per_sample * (block_pkt_idx*samp_per_packet 
                 + isamp);
@@ -236,6 +233,21 @@ void guppi_udp_packet_data_copy_transpose(char *databuf, int nchan,
             iptr += bytes_per_sample;
             optr += bytes_per_sample*samp_per_block;
         }
+    }
+#else
+    /* New improved cache friendly version */
+    char *in = guppi_udp_packet_data(p);
+    optr = databuf + bytes_per_sample * (block_pkt_idx*samp_per_packet);
+    for (ichan=0; ichan<chan_per_packet; ++ichan)
+    {
+        iptr = in + (ichan*bytes_per_sample);
+        for (isamp=0; isamp<samp_per_packet; ++isamp)
+        {
+            memcpy(optr, iptr, bytes_per_sample);
+            optr += bytes_per_sample;
+            iptr += chan_per_packet*bytes_per_sample;
+        }
+        optr += bytes_per_sample*(samp_per_block-samp_per_packet);  
     }
 #endif
 
