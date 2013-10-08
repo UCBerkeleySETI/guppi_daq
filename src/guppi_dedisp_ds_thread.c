@@ -247,6 +247,7 @@ void guppi_dedisp_ds_thread(void *_args) {
 
         /* Loop over channels in the block */
         unsigned ichan;
+        int ds_stride = ds.npol*npts_block;
         // Make a copy of the ds so we can modify the internal pointers
         // to fool the desisperse routine.
         memcpy(&temp_ds, &ds, sizeof(ds));

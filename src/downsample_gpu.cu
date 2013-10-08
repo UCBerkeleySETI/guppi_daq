@@ -25,11 +25,29 @@ void init_downsample(struct dedispersion_setup *s) {
     // Allocate memory for DS results on GPU
     const size_t ds_bytes = get_ds_bytes(s) * s->nchan;
     cudaMalloc((void**)&s->dsbuf_gpu, ds_bytes);
+    cudaMalloc((void**)&s->dsbuf_trans_gpu, ds_bytes);
     printf("Downsample memory = %.1f MB\n", ds_bytes / (1024.*1024.));
 
     // Check for errors
     cudaThreadSynchronize();
     printf("init_downsample cuda_err='%s'\n", 
+            cudaGetErrorString(cudaGetLastError()));
+}
+
+extern "C"
+void deinit_downsample(struct dedispersion_setup *s)
+{
+    if (s->dsbuf_gpu)
+    {
+        cudaFree(s->dsbuf_gpu);
+        s->dsbuf_gpu=0;
+    }
+    if (s->dsbuf_trans_gpu)
+    {
+        cudaFree(s->dsbuf_trans_gpu);
+        s->dsbuf_trans_gpu = 0;
+    }
+    printf("deinit_downsample cuda_err='%s'\n", 
             cudaGetErrorString(cudaGetLastError()));
 }
 
@@ -132,13 +150,40 @@ __global__ void detect_downsample_1pol(const float2 *pol0, const float2 *pol1,
     }
 
 }
+__global__
+void gpu_transpose8(char *in, char *out)
+{
+    int dx = blockIdx.x * blockDim.x + threadIdx.x;
+    int dy = blockIdx.y * blockDim.y + threadIdx.y;
+    int in_idx  = dy * gridDim.x * blockDim.x + dx;
 
+    // exchange the coordinates
+    int out_idx = dx * gridDim.y * blockDim.y + dy;
+
+    out[out_idx] = in[in_idx];
+    // out[in_idx] = in[in_idx];
+}
+
+
+extern "C"
 void transpose8(struct dedispersion_setup *s, int big_ds_bytes, char *ds_out)
 {
+    dim3 grid, block;
+    block.x = 8;
+    block.y = 8;
+    grid.x = ((s->npts_per_block/s->dsfac) * s->npol)/block.x;
+    grid.y = (s->nchan/block.y);
+/*
+    printf("trans8: npts=%d npol=%d nchan=%d big_ds_bytes=%d,maxidx=%d\n",
+           s->npts_per_block, s->npol, s->nchan, big_ds_bytes,
+           block.x*grid.x * block.y * grid.y);
+*/
+    gpu_transpose8<<<grid, block>>>(s->dsbuf_gpu, s->dsbuf_trans_gpu);
     /* Transfer data back to CPU if ds_out is not null*/
     if (ds_out != 0)
     {
-        cudaMemcpy(ds_out, s->dsbuf_gpu, big_ds_bytes, cudaMemcpyDeviceToHost);
+      cudaMemcpy(ds_out, s->dsbuf_trans_gpu, big_ds_bytes, cudaMemcpyDeviceToHost);
+      //  cudaMemcpy(ds_out, s->dsbuf_gpu, big_ds_bytes, cudaMemcpyDeviceToHost);
     }
 }
 

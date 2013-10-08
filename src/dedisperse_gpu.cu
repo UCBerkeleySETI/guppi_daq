@@ -367,6 +367,7 @@ void dedisperse(struct dedispersion_setup *s, int ichan,
 #define NT 12
     cudaEvent_t t[NT];
     int it;
+    memset(&t[0], 0, sizeof(t));
     for (it=0; it<NT; it++) cudaEventCreate(&t[it]);
     it=0;
 
@@ -490,6 +491,8 @@ void free_dedispersion(struct dedispersion_setup *s) {
     cudaFree(s->overlap_gpu);
     cudaFree(s->databuf0_gpu);
     cudaFree(s->chirp_gpu[0]);
+
+    deinit_downsample(s);
 
     cudaThreadExit();
 }

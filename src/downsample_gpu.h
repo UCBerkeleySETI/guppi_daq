@@ -6,6 +6,7 @@ extern "C" {
 #endif
 void init_downsample(struct dedispersion_setup *s);
 void downsample(struct dedispersion_setup *s, char *ds_out);
+void transpose8(struct dedispersion_setup *s,int nbytes, char *ds_out);
 #ifdef __cplusplus
 }
 #endif
