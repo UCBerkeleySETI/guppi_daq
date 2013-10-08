@@ -23,7 +23,7 @@ void init_downsample(struct dedispersion_setup *s) {
     // TODO: check that params satisfy any alignment requirements.
 
     // Allocate memory for DS results on GPU
-    const size_t ds_bytes = get_ds_bytes(s);
+    const size_t ds_bytes = get_ds_bytes(s) * s->nchan;
     cudaMalloc((void**)&s->dsbuf_gpu, ds_bytes);
     printf("Downsample memory = %.1f MB\n", ds_bytes / (1024.*1024.));
 
@@ -133,6 +133,14 @@ __global__ void detect_downsample_1pol(const float2 *pol0, const float2 *pol1,
 
 }
 
+void transpose8(struct dedispersion_setup *s, int big_ds_bytes, char *ds_out)
+{
+    /* Transfer data back to CPU if ds_out is not null*/
+    if (ds_out != 0)
+    {
+        cudaMemcpy(ds_out, s->dsbuf_gpu, big_ds_bytes, cudaMemcpyDeviceToHost);
+    }
+}
 
 /* Detect / downsample data.  Assumes dedispersion results
  * are already in the GPU, as described in the dedispersion_setup
@@ -158,6 +166,10 @@ void downsample(struct dedispersion_setup *s, char *ds_out) {
     cudaMemset(s->dsbuf_gpu, 0, ds_bytes);
 
     /* Downsample data */
+    // Setup Grid dimensions: nffts_per_block x 32 [thread blocks]
+    // Each thread block has 64 x 1 threads
+    // What if we increased the dsbuf size and added a zdim of size nchan?
+    // 
     dim3 gd(s->nfft_per_block, 32, 1);
     if (s->npol==1) 
         detect_downsample_1pol<<<gd, 64>>>(s->databuf0_gpu, s->databuf1_gpu,
@@ -167,8 +179,11 @@ void downsample(struct dedispersion_setup *s, char *ds_out) {
                 s->dsfac, s->fft_len, s->overlap, (char4 *)s->dsbuf_gpu);
     cudaEventRecord(t[it], 0); it++;
 
-    /* Transfer data back to CPU */
-    cudaMemcpy(ds_out, s->dsbuf_gpu, ds_bytes, cudaMemcpyDeviceToHost);
+    /* Transfer data back to CPU if ds_out is not null*/
+    if (ds_out != 0)
+    {
+        cudaMemcpy(ds_out, s->dsbuf_gpu, ds_bytes, cudaMemcpyDeviceToHost);
+    }
     cudaEventRecord(t[it], 0); it++;
 
     /* Final timer */
@@ -197,3 +212,4 @@ void downsample(struct dedispersion_setup *s, char *ds_out) {
     for (it=0; it<NT; it++) cudaEventDestroy(t[it]);
 
 }
+
