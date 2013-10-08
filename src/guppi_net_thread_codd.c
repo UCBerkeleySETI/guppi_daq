@@ -56,6 +56,14 @@ struct datablock_stats {
     unsigned long long last_pkt;   // Last packet seq number written to block
 };
 
+/* get the thread specific pid */
+#include <sys/syscall.h>
+pid_t gettid()
+{
+    return (pid_t) syscall (SYS_gettid);
+}
+
+
 /* Reset all counters */
 void reset_stats(struct datablock_stats *d) {
     d->npacket=0;
@@ -197,6 +205,7 @@ void *guppi_net_thread_codd(void *_args) {
         guppi_error("guppi_net_thread_codd", "Error setting priority level.");
         perror("set_priority");
     }
+    printf("DBUG: codd_net thread pid=%d\n", gettid());
 
     /* Attach to status shared mem area */
     struct guppi_status st;
