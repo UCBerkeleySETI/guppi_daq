@@ -249,7 +249,8 @@ void guppi_dedisp_ds_thread(void *_args) {
         unsigned ichan;
         int ds_stride = ds.npol*npts_block;
         // Make a copy of the ds so we can modify the internal pointers
-        // to fool the desisperse routine.
+        // to fool the desisperse/downsample routines, building up
+        // the entire block on the gpu for the transpose below.
         memcpy(&temp_ds, &ds, sizeof(ds));
         for (ichan=0; ichan<ds.nchan; ichan++) 
         {
@@ -265,8 +266,10 @@ void guppi_dedisp_ds_thread(void *_args) {
             dedisperse(&temp_ds, ichan, rawdata, 0 /* outdata not used */);
 
             /* call downsample */
-            downsample(&temp_ds, 0 /* dsbuf Leave output on GPU */);
+            downsample(&temp_ds, 0 /* dsbuf (NULL means leave output on GPU */);
         }
+        // copy the time stats back into the original ds
+        memcpy(&ds.time, &temp_ds.time, sizeof(ds.time));
         // Now transpose, and copy the data directly back into 
         // output data block
         transpose8(&ds, ds.nchan*ds.npol*npts_block, curdata_out);

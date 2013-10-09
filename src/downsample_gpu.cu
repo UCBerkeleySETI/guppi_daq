@@ -161,10 +161,9 @@ void gpu_transpose8(char *in, char *out)
     int out_idx = dx * gridDim.y * blockDim.y + dy;
 
     out[out_idx] = in[in_idx];
-    // out[in_idx] = in[in_idx];
 }
 
-
+/// Perform a classic non-square transpose of byte values
 extern "C"
 void transpose8(struct dedispersion_setup *s, int big_ds_bytes, char *ds_out)
 {
@@ -173,17 +172,12 @@ void transpose8(struct dedispersion_setup *s, int big_ds_bytes, char *ds_out)
     block.y = 8;
     grid.x = ((s->npts_per_block/s->dsfac) * s->npol)/block.x;
     grid.y = (s->nchan/block.y);
-/*
-    printf("trans8: npts=%d npol=%d nchan=%d big_ds_bytes=%d,maxidx=%d\n",
-           s->npts_per_block, s->npol, s->nchan, big_ds_bytes,
-           block.x*grid.x * block.y * grid.y);
-*/
+
     gpu_transpose8<<<grid, block>>>(s->dsbuf_gpu, s->dsbuf_trans_gpu);
     /* Transfer data back to CPU if ds_out is not null*/
     if (ds_out != 0)
     {
-      cudaMemcpy(ds_out, s->dsbuf_trans_gpu, big_ds_bytes, cudaMemcpyDeviceToHost);
-      //  cudaMemcpy(ds_out, s->dsbuf_gpu, big_ds_bytes, cudaMemcpyDeviceToHost);
+        cudaMemcpy(ds_out, s->dsbuf_trans_gpu, big_ds_bytes, cudaMemcpyDeviceToHost);
     }
 }
 
