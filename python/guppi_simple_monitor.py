@@ -156,10 +156,10 @@ usage()
 # Get all of the useful values
 g = guppi_status()
 g.read()
-nchan = g["OBSNCHAN"]
-npoln = g["NPOL"]
-BW = g["OBSBW"]
-fctr = g["OBSFREQ"]
+nchan = int(g["OBSNCHAN"])
+npoln = int(g["NPOL"])
+BW = float(g["OBSBW"])
+fctr = float(g["OBSFREQ"])
 bins = n.arange(nchan)
 freqs = bins/float(nchan)*BW + (fctr-0.5*BW)
 

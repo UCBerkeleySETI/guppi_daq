@@ -4,7 +4,7 @@ import time, pyfits, guppi_daq.possem as possem
 import numpy as n
 #import psr_utils as psr
 import astro_utils as astro
-import slalib as s
+import pyslalib as s
 
 DEGTORAD = 0.017453292519943295769236907684
 RADTODEG = 57.29577951308232087679815481410
@@ -161,7 +161,8 @@ class guppi_status:
         self.update("AZ", az)
         self.update("ZA", za)
 
-GUPPI_DATABUF_KEY = 12987498
+#GUPPI_DATABUF_KEY = 12987498
+GUPPI_DATABUF_KEY = 12987504
 
 class guppi_databuf:
 
@@ -208,8 +209,8 @@ class guppi_databuf:
                 self.data_offset + block*self.block_size), \
                 dtype=self.dtype)
         try:
-            npol = self.hdr[block]["NPOL"]
-            nchan = self.hdr[block]["OBSNCHAN"]
+            npol = int(self.hdr[block]["NPOL"])
+            nchan = int(self.hdr[block]["OBSNCHAN"])
             if (self.hdr[block]["OBS_MODE"] == "PSR"):
                 #nbin = self.hdr[block]["NBIN"]
                 #raw.shape = (nbin, npol, nchan)
