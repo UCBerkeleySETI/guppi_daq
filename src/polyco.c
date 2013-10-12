@@ -250,6 +250,9 @@ char telescope_name_to_code(const char *name) {
     unlink("pulsar.par");\
     unlink("polyco.dat");\
     unlink("tz.in");\
+    unlink("tempo.lis");\
+    unlink("tempo.out");\
+    unlink("tz.tmp");\
     chdir(origdir);\
     free(origdir);\
     rmdir(tmpdir);\
@@ -338,8 +341,9 @@ int make_polycos(const char *parfile, struct hdrinfo *hdr,
     mjd0 = (int)hdr->MJD_epoch;
     mjd1 = (int)(hdr->MJD_epoch + hdr->scanlen/86400.0 + 0.5);
     if (mjd1==mjd0) mjd1++;
-    sprintf(line, "echo %d %d | tempo -z -f pulsar.par > /dev/null",
-            mjd0-1, mjd1);
+    //sprintf(line, "echo %d %d | tempo -z -f pulsar.par > /dev/null",
+    sprintf(line, "echo %d %d | tempo -z -f pulsar.par > %s/tempo.out",
+            mjd0-1, mjd1, tmpdir);
     system(line);
 
     /* Read polyco file */
