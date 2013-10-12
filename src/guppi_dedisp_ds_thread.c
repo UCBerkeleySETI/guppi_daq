@@ -125,7 +125,7 @@ void guppi_dedisp_ds_thread(void *_args) {
     unsigned char *rawdata=NULL;
     float *outdata=NULL;
     int imjd;
-    double fmjd, offset;
+    double fmjd, offset, overlap_offset=0.0;
     int first=1;
     int nblock_int=0, npacket=0, ndrop=0;
     double tsubint=0.0, suboffs=0.0;
@@ -205,6 +205,10 @@ void guppi_dedisp_ds_thread(void *_args) {
             /* Init downsample */
             init_downsample(&ds);
 
+            /* Compute the time offset due to overlap */
+            const double sec_per_sample = 1.0e-6/fabs(ds.bw);
+            overlap_offset = sec_per_sample * (double)ds.overlap/2.0;
+
             /* Clear first time flag */
             first=0;
         }
@@ -232,6 +236,7 @@ void guppi_dedisp_ds_thread(void *_args) {
         // but if we do it here, will 'packet 0' check get screwed up?
         hputi8(hdr_out, "PKTIDX", 
                 gp.packetsize*gp.packetindex/ds.dsfac/4/ds.nchan);
+        hputr8(hdr_out, "STT_OFFS", overlap_offset);
 
         /* Set current time (needed?) */
         ds.imjd = imjd;
