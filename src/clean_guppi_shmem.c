@@ -17,6 +17,7 @@
 int main(int argc, char *argv[]) {
     int rv,ex=0;
 
+#if 0 
     /* Status shared mem, force unlock first */
     struct guppi_status s;
     sem_unlink(GUPPI_STATUS_SEMID);
@@ -38,6 +39,7 @@ int main(int argc, char *argv[]) {
         perror("sem_unlink");
         ex=1;
     }
+#endif
 
     /* Databuf shared mem */
     struct guppi_databuf *d=NULL;
