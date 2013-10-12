@@ -484,23 +484,20 @@ void *guppi_net_thread_codd(void *_args) {
             /* Read/update current status shared mem */
             guppi_status_lock_safe(&st);
             if (stt_imjd!=0) {
-#if 1 
                 hputi4(st.buf, "STT_IMJD", stt_imjd);
                 hputi4(st.buf, "STT_SMJD", stt_smjd);
                 hputr8(st.buf, "STT_OFFS", stt_offs);
-#endif
-                // XXX REMOVE WHEN DONE TESTING XXX
-                //hputi4(st.buf, "STT_IMJD", 54552);
-                //hputi4(st.buf, "STT_SMJD", 21447);
-                //hputr8(st.buf, "STT_OFFS", 0.0);
-                // 1937:
-                //hputi4(st.buf, "STT_IMJD", 55049);
-                //hputi4(st.buf, "STT_SMJD", 83701);
-                //hputr8(st.buf, "STT_OFFS", 0.0);
-                // XXX REMOVE WHEN DONE TESTING XXX
                 hputi4(st.buf, "STTVALID", 1);
             } else {
+                // Put a non-accurate start time to avoid polyco 
+                // errors.
+                get_current_mjd(&stt_imjd, &stt_smjd, &stt_offs);
+                hputi4(st.buf, "STT_IMJD", stt_imjd);
+                hputi4(st.buf, "STT_SMJD", stt_smjd);
                 hputi4(st.buf, "STTVALID", 0);
+                // Reset to zero
+                stt_imjd = 0;
+                stt_smjd = 0;
             }
             memcpy(status_buf, st.buf, GUPPI_STATUS_SIZE);
             guppi_status_unlock_safe(&st);

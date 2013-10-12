@@ -334,7 +334,15 @@ void *guppi_net_thread(void *_args) {
                 hputr8(st.buf, "STT_OFFS", stt_offs);
                 hputi4(st.buf, "STTVALID", 1);
             } else {
+                // Put a non-accurate start time to avoid polyco 
+                // errors.
+                get_current_mjd(&stt_imjd, &stt_smjd, &stt_offs);
+                hputi4(st.buf, "STT_IMJD", stt_imjd);
+                hputi4(st.buf, "STT_SMJD", stt_smjd);
                 hputi4(st.buf, "STTVALID", 0);
+                // Reset to zero
+                stt_imjd = 0;
+                stt_smjd = 0;
             }
             memcpy(status_buf, st.buf, GUPPI_STATUS_SIZE);
             guppi_status_unlock_safe(&st);
