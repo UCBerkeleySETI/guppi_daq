@@ -199,7 +199,7 @@ void guppi_dedisp_thread(void *_args) {
                         || strcmp(pf.fold.parfile,"None")==0) {
                     /* If no parfile, read polyco.dat */
                     //FILE *pcf = fopen("polyco.dat", "r");
-                    FILE *pcf = fopen("/home/gpu/polyco.dat", "r");
+                    FILE *pcf = fopen("/home/dibas/polyco.dat", "r");
                     if (pcf==NULL) { 
                         guppi_error("guppi_dedisp_thread", 
                                 "Couldn't open polyco.dat");
