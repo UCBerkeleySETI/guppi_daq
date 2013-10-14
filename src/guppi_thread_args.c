@@ -119,16 +119,15 @@ unsigned int get_config_key_value(char *keyword, struct KeywordValues *keywords)
 
 void mask_to_cpuset(cpu_set_t *cpuset, unsigned int mask)
 {
-    int i;
     int core=0;
     // illegal condtion -- use default
     if (mask == 0)
         return;
         
     CPU_ZERO(cpuset);
-    for (i=1; i<31; ++i, ++core)
+    for (core=1; core<31; core++)
     {
-        if ((1<<i) & mask)
+        if ((1<<core) & mask)
         {
             CPU_SET(core, cpuset);
         }
