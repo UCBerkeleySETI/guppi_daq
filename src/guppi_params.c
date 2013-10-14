@@ -390,13 +390,12 @@ void guppi_read_obs_params(char *buf,
         p->sub.dat_freqs = (float *)malloc(sizeof(float) * p->hdr.nchan);
         p->sub.dat_weights = (float *)malloc(sizeof(float) * p->hdr.nchan);
         // The following correctly accounts for the middle-of-bin FFT offset
-        // XXX This might not be correct for coherent dedisp mode.  Need 
-        //     to determine the right way of denoting which nodes are getting
-        //     which channels
         dtmp = p->hdr.fctr - 0.5 * p->hdr.BW;
+        double foffs;
+        if (strncmp("COHERENT",p->hdr.obs_mode,8)==0) { foffs=0.5; }
+        else { foffs=0.0; }
         for (ii = 0 ; ii < p->hdr.nchan ; ii++) {
-            //p->sub.dat_freqs[ii] = dtmp + ii * p->hdr.df; // Orig version
-            p->sub.dat_freqs[ii] = dtmp + (ii+0.5) * p->hdr.df;
+            p->sub.dat_freqs[ii] = dtmp + (ii+foffs) * p->hdr.df;
             p->sub.dat_weights[ii] = 1.0;
         }
         // Explicitly weight the DC and Nyquist channels zero
