@@ -219,6 +219,7 @@ int psrfits_create(struct psrfits *pf) {
         fits_update_key(pf->fptr, TINT, "NPOL", &(hdr->npol), NULL, status);
     }
     if (!hdr->onlyI && !hdr->summed_polns) {
+#if 0 
         // TODO:  These need to be updated for the real machine.
         if (hdr->npol==1)
             strcpy(ctmp, "AA");
@@ -228,6 +229,8 @@ int psrfits_create(struct psrfits *pf) {
             //strcpy(ctmp, "IQUV");
             strcpy(ctmp, "AABBCRCI");
         fits_update_key(pf->fptr, TSTRING, "POL_TYPE", ctmp, NULL, status);
+#endif
+        fits_update_key(pf->fptr, TSTRING, "POL_TYPE", hdr->poln_order, NULL, status);
     } else {
         fits_update_key(pf->fptr, TSTRING, "POL_TYPE", "AA+BB", NULL, status);
     }
