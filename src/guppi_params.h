@@ -22,6 +22,7 @@ struct guppi_params {
     int decimation_factor;      // Number of raw spectra integrated
     int n_bits_adc;             // Number of bits sampled by ADCs
     int pfb_overlap;            // PFB overlap factor
+    int coherent;               // True if coherent mode is in use.
     float scale[16*1024];       // Per-channel scale factor
     float offset[16*1024];      // Per-channel offset
 };

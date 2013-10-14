@@ -187,6 +187,7 @@ void guppi_read_subint_params(char *buf,
     get_int("ACC_LEN", g->decimation_factor, 0);
     get_int("NBITSADC", g->n_bits_adc, 8);
     get_int("PFB_OVER", g->pfb_overlap, 4);
+    get_int("CODD", g->coherent, 0);
 
     // Check fold mode 
     int fold=0;
@@ -392,7 +393,9 @@ void guppi_read_obs_params(char *buf,
         // The following correctly accounts for the middle-of-bin FFT offset
         dtmp = p->hdr.fctr - 0.5 * p->hdr.BW;
         double foffs;
-        if (strncmp("COHERENT",p->hdr.obs_mode,8)==0) { foffs=0.5; }
+        int is_codd;
+        get_int("CODD", is_codd, 0);
+        if (is_codd) { foffs=0.5; }
         else { foffs=0.0; }
         for (ii = 0 ; ii < p->hdr.nchan ; ii++) {
             p->sub.dat_freqs[ii] = dtmp + (ii+foffs) * p->hdr.df;

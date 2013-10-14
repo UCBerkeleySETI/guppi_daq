@@ -134,7 +134,6 @@ void guppi_psrfits_thread(void *_args) {
     int n_polyco_written=0;
     float *fold_output_array = NULL;
     int scan_finished=0;
-    int is_coherent=0;
     signal(SIGINT, cc);
     do {
         /* Note waiting status */
@@ -174,8 +173,6 @@ void guppi_psrfits_thread(void *_args) {
 
         /* Find out what mode this data is in */
         mode = psrfits_obs_mode(pf.hdr.obs_mode);
-        if (strncmp("COHERENT",pf.hdr.obs_mode,8)==0) { is_coherent=1; }
-        else { is_coherent=0; }
 
         /* Check if we got both packet 0 and a valid observation
          * start time.  If so, flag writing to start.
@@ -201,7 +198,7 @@ void guppi_psrfits_thread(void *_args) {
                 fb.nchan = pf.hdr.nchan;
                 fb.npol = pf.hdr.npol;
                 fb.nbin = pf.hdr.nbin;
-                if (is_coherent) fb.order = pol_bin_chan;
+                if (gp.coherent) fb.order = pol_bin_chan;
                 else fb.order = chan_pol_bin;
                 //fb.order = pol_bin_chan; // XXX fix this!
                 fb.data = (float *)guppi_databuf_data(db, curblock);

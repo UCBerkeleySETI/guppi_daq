@@ -237,6 +237,7 @@ void guppi_dedisp_ds_thread(void *_args) {
         hputi8(hdr_out, "PKTIDX", 
                 gp.packetsize*gp.packetindex/ds.dsfac/4/ds.nchan);
         hputr8(hdr_out, "STT_OFFS", overlap_offset);
+        hputi4(hdr_out, "CODD", 1);
 
         /* Set current time (needed?) */
         ds.imjd = imjd;

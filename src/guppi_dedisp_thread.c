@@ -245,6 +245,7 @@ void guppi_dedisp_thread(void *_args) {
             memcpy(hdr_out, guppi_databuf_header(db_in, curblock_in),
                     GUPPI_STATUS_SIZE);
             hputi4(hdr_out, "NBIN", fb.nbin);
+            hputi4(hdr_out, "CODD", 1);
             if (strstr(pf.hdr.obs_mode,"CAL")==NULL) 
                 hputs(hdr_out, "OBS_MODE", "PSR");
             else
@@ -334,6 +335,7 @@ void guppi_dedisp_thread(void *_args) {
                 hputs(hdr_out, "OBS_MODE", "PSR");
             else
                 hputs(hdr_out, "OBS_MODE", "CAL");
+            hputi4(hdr_out, "CODD", 1);
             hputi4(hdr_out, "NBIN", fb.nbin);
             hputi4(hdr_out, "PKTIDX", gp.packetindex);
 
