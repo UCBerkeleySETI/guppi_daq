@@ -303,6 +303,7 @@ void guppi_read_obs_params(char *buf,
         p->hdr.nbin = 1;
 
     // Coherent dedispersion params
+    get_int("CODD", g->coherent, 0);
     get_int("FFTLEN", p->dedisp.fft_len, 0);
     get_int("OVERLAP", p->dedisp.overlap, 0);
     get_dbl("CHAN_DM", p->hdr.chan_dm, 0.0);
@@ -340,7 +341,8 @@ void guppi_read_obs_params(char *buf,
     // Use a $DATADIR/$PROJID/$BACKEND/$BANK prefix for files
     if (strnlen(banknam, sizeof(banknam)) < 1)
         snprintf(banknam, sizeof(banknam), ".");
-    sprintf(p->basefilename, "%s/%s/%s/%c/%s", dir, p->hdr.project_id, p->hdr.backend, 
+    sprintf(p->basefilename, "%s/%s/%s%s/%c/%s", dir, p->hdr.project_id, 
+            p->hdr.backend, g->coherent ? "_CODD" : "", 
             banknam[strnlen(banknam, sizeof(banknam))-1], base);
 #endif
     { // Date and time of start
