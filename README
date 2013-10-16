@@ -1,8 +1,13 @@
 guppi_daq - Data aquisition software for GUPPI
 
 How to run setup.py:
-python setup.py install --install-lib=/opt/64bit/guppi/lib/python
+python setup.py install --install-lib=/opt/dibas/dibaslibs/lib64/python
 
 This will put all the guppi_daq python code in 
-/opt/64bit/guppi/lib/python/guppi_daq.  It can then be imported using 
+/opt/dibas/dibaslibs/lib64/python/guppi_daq.  It can then be imported using 
 "from guppi_daq import guppi_utils", etc.
+
+To build the C code:
+
+cd src; make; make install
+
