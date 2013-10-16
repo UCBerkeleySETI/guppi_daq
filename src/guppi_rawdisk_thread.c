@@ -178,6 +178,17 @@ void guppi_rawdisk_thread(void *_args) {
             char fname[256];
             sprintf(fname, "%s.%4.4d.raw", pf.basefilename, filenum);
             fprintf(stderr, "Opening raw file '%s'\n", fname);
+            // Create the output directory if needed
+            char datadir[1024];
+            strncpy(datadir, pf.basefilename, 1023);
+            char *last_slash = strrchr(datadir, '/');
+            if (last_slash!=NULL && last_slash!=datadir) {
+                *last_slash = '\0';
+                printf("Using directory '%s' for output.\n", datadir);
+                char cmd[1024];
+                sprintf(cmd, "mkdir -m 1777 -p %s", datadir);
+                system(cmd);
+            }
             // TODO: check for file exist.
             fraw = fopen(fname, "w");
             if (fraw==NULL) {
@@ -256,6 +267,18 @@ void guppi_rawdisk_thread(void *_args) {
 
             /* Write data */
             ptr = guppi_databuf_data(db, curblock);
+#if 0
+            size_t nb, wb=1024*1024;
+            for (nb=0; nb<blocksize; nb+=wb) {
+                size_t to_write = wb;
+                if (blocksize - nb < wb) { to_write = blocksize-nb; }
+                rv = fwrite(ptr, 1, to_write, fraw);
+                if (rv != to_write) { 
+                    guppi_error("guppi_rawdisk_thread", 
+                            "Error writing data.");
+                }
+            }
+#endif
             rv = fwrite(ptr, 1, (size_t)blocksize, fraw);
             if (rv != blocksize) { 
                 guppi_error("guppi_rawdisk_thread", 
