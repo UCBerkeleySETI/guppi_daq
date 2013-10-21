@@ -167,17 +167,37 @@ void gpu_transpose8(char *in, char *out)
 extern "C"
 void transpose8(struct dedispersion_setup *s, int big_ds_bytes, char *ds_out)
 {
+    cudaEvent_t start, stop;
+    float transp_time, copy_time;
+    
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+
     dim3 grid, block;
     block.x = 8;
     block.y = 8;
     grid.x = ((s->npts_per_block/s->dsfac) * s->npol)/block.x;
     grid.y = (s->nchan/block.y);
-
+    
+    cudaEventRecord(start, 0);
     gpu_transpose8<<<grid, block>>>(s->dsbuf_gpu, s->dsbuf_trans_gpu);
+    cudaEventRecord(stop, 0);
+    cudaEventSynchronize(stop);
+    cudaEventElapsedTime(&transp_time, start, stop);
+    s->time.downsample += transp_time;
+    s->time.total2 += transp_time;
+    
+    
     /* Transfer data back to CPU if ds_out is not null*/
     if (ds_out != 0)
     {
+        cudaEventRecord(start, 0);
         cudaMemcpy(ds_out, s->dsbuf_trans_gpu, big_ds_bytes, cudaMemcpyDeviceToHost);
+        cudaEventRecord(stop, 0);
+        cudaEventSynchronize(stop);
+        cudaEventElapsedTime(&copy_time, start, stop);
+        s->time.transfer_to_host += copy_time;
+        s->time.total2 += copy_time;
     }
 }
 
