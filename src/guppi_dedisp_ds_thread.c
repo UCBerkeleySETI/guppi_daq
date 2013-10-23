@@ -119,6 +119,8 @@ void guppi_dedisp_ds_thread(void *_args) {
     char *hdr_in=NULL, *hdr_out=NULL;
     struct dedispersion_setup ds, temp_ds;
     char *curdata_out, *dsbuf;
+    
+    memset(&ds, 0, sizeof(ds));
     pthread_cleanup_push((void *)free_dedispersion, &ds);
     pthread_cleanup_push((void *)print_timing_report, &ds);
     int curblock_in=0, curblock_out=0, got_packet_0=0;
@@ -244,26 +246,38 @@ void guppi_dedisp_ds_thread(void *_args) {
         ds.fmjd = fmjd;
         
         const unsigned npts_block = pf.hdr.nsblk / ds.dsfac;
+        
+        
+        unsigned char *packet_data_in = (unsigned char *)guppi_databuf_data(db_in, curblock_in);
 
         /* Loop over channels in the block */
         unsigned ichan;
         int ds_stride = ds.npol*npts_block;
+        int net_stride = ds_stride * ds.dsfac;
+
+        // Load the whole block onto the GPU, untransposed    
+        // ds.tbuf_gpu holds the whole block 
+        load_net_block_gpu(&ds, packet_data_in);
+          
+        transpose_net_block(&ds);
+        
         // Make a copy of the ds so we can modify the internal pointers
         // to fool the desisperse/downsample routines, building up
         // the entire block on the gpu for the transpose below.
         memcpy(&temp_ds, &ds, sizeof(ds));
         for (ichan=0; ichan<ds.nchan; ichan++) 
         {
-            temp_ds.dsbuf_gpu = &ds.dsbuf_gpu[ichan*ds_stride];
+            temp_ds.dsbuf_gpu = ds.dsbuf_gpu + ichan*ds_stride;
+            temp_ds.tbuf_gpu  = ds.tbuf_gpu  + ichan*net_stride;
             /* Pointer to raw data
              * 4 bytes per sample for 8-bit/2-pol/complex data
              */
-            rawdata = (unsigned char *)guppi_databuf_data(db_in, curblock_in) 
-                + (size_t)4 * pf.hdr.nsblk * ichan;
+            // rawdata = (unsigned char *)guppi_databuf_data(db_in, curblock_in) 
+            //     + (size_t)4 * pf.hdr.nsblk * ichan;
 
             /* Call dedisp fn */
             // each call fills a portion of a large output buffer on the GPU
-            dedisperse(&temp_ds, ichan, rawdata, 0 /* outdata not used */);
+            dedisperse(&temp_ds, ichan, 0, 0 /* in/outdata not used */);
 
             /* call downsample */
             downsample(&temp_ds, 0 /* dsbuf (NULL means leave output on GPU */);

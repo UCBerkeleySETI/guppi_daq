@@ -180,7 +180,10 @@ void transpose8(struct dedispersion_setup *s, int big_ds_bytes, char *ds_out)
     grid.y = (s->nchan/block.y);
     
     cudaEventRecord(start, 0);
+    CHECK_CUDA("transpose8(A)");
+    
     gpu_transpose8<<<grid, block>>>(s->dsbuf_gpu, s->dsbuf_trans_gpu);
+    CHECK_CUDA("transpose8(b)");
     cudaEventRecord(stop, 0);
     cudaEventSynchronize(stop);
     cudaEventElapsedTime(&transp_time, start, stop);
@@ -220,7 +223,7 @@ void downsample(struct dedispersion_setup *s, char *ds_out) {
 
     cudaEventRecord(t[it], 0); it++;
     cudaEventRecord(t[it], 0); it++;
-
+    CHECK_CUDA("downsample(A)");
     /* Clear out data buf */
     cudaMemset(s->dsbuf_gpu, 0, ds_bytes);
 
@@ -229,6 +232,7 @@ void downsample(struct dedispersion_setup *s, char *ds_out) {
     // Each thread block has 64 x 1 threads
     // What if we increased the dsbuf size and added a zdim of size nchan?
     // 
+    CHECK_CUDA("downsample(a)");
     dim3 gd(s->nfft_per_block, 32, 1);
     if (s->npol==1) 
         detect_downsample_1pol<<<gd, 64>>>(s->databuf0_gpu, s->databuf1_gpu,
@@ -237,12 +241,15 @@ void downsample(struct dedispersion_setup *s, char *ds_out) {
         detect_downsample_4pol<<<gd, 64>>>(s->databuf0_gpu, s->databuf1_gpu,
                 s->dsfac, s->fft_len, s->overlap, (char4 *)s->dsbuf_gpu);
     cudaEventRecord(t[it], 0); it++;
+    
+    CHECK_CUDA("downsample(b)");
 
     /* Transfer data back to CPU if ds_out is not null*/
     if (ds_out != 0)
     {
         cudaMemcpy(ds_out, s->dsbuf_gpu, ds_bytes, cudaMemcpyDeviceToHost);
     }
+    CHECK_CUDA("downsample(c)");
     cudaEventRecord(t[it], 0); it++;
 
     /* Final timer */

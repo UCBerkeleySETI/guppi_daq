@@ -224,6 +224,21 @@ void guppi_udp_packet_data_copy_transpose(char *databuf, int nchan,
         debugfirst=0;
     } 
 #if 0
+    // Arrange data from network packet format e.g:
+    // S0C0P0123, S0C1P0123, S0C2P0123, ... S0CnP0123,
+    // S1C0P0123, S1C1P0123, S1C2P0123, ... S1CnP0123,
+    // S2C0P0123, S2C1P0123, S3C2P0123, ... S2CnP0123,
+    // S3C0P0123, S3C1P0123, S3C2P0123, ... S3CnP0123,    
+    // SmCnP0123
+    
+    // Into the format:
+    // S0C0P0123, S1C0P0123, S2C0P0123, ... SmC0P0123
+    // S0C1P0123/ S1C1P0123, S2C1P0123, ... SmC1P0123
+    // S0C2P0123/ S1C2P0123, S2C2P0123, ... SmC1P0123
+    // S0C3P0123/ S1C3P0123, S2C3P0123, ... SmC1P0123        
+    /// ...
+    // SmC0P0123        
+    
     iptr = guppi_udp_packet_data(p);
     for (isamp=0; isamp<samp_per_packet; isamp++) {
         optr = databuf + bytes_per_sample * (block_pkt_idx*samp_per_packet 
@@ -238,6 +253,7 @@ void guppi_udp_packet_data_copy_transpose(char *databuf, int nchan,
     /* New improved cache friendly version */
     char *in = guppi_udp_packet_data(p);
     optr = databuf + bytes_per_sample * (block_pkt_idx*samp_per_packet);
+#if 0
     for (ichan=0; ichan<chan_per_packet; ++ichan)
     {
         iptr = in + (ichan*bytes_per_sample);
@@ -249,6 +265,10 @@ void guppi_udp_packet_data_copy_transpose(char *databuf, int nchan,
         }
         optr += bytes_per_sample*(samp_per_block-samp_per_packet);  
     }
+#else
+    // tranpose on gpu
+    memcpy(optr, in, chan_per_packet*samp_per_packet*bytes_per_sample);
+#endif
 #endif
 
 #if 0 

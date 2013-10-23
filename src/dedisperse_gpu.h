@@ -71,6 +71,9 @@ struct dedispersion_setup {
     // Memory for downsampling
     char *dsbuf_gpu;              // 8-bit downsampled data
     char *dsbuf_trans_gpu;
+    
+    // Memory for caching net data blocks for input
+    char *netblk_in_gpu;
 
     // GPU control stuff
     cufftHandle plan;           // CUFFT plan
@@ -93,8 +96,21 @@ void free_dedispersion(struct dedispersion_setup *s);
 void print_timing_report(struct dedispersion_setup *s);
 void deinit_downsample(struct dedispersion_setup *s);
 int init_cuda_context(void);
+void transpose_net_block(struct dedispersion_setup *s);
+void load_net_block_gpu(struct dedispersion_setup *ds, const unsigned char *input);
 #ifdef __cplusplus
 }
+#endif
+
+#define ENABLE_CUDA_CHECKS
+#ifdef ENABLE_CUDA_CHECKS
+#define CHECK_CUDA(message) \
+    do { cudaError_t __result__ = cudaGetLastError(); \
+         if (__result__ != cudaSuccess) \
+             printf(message "cuda_err='%s'\n",cudaGetErrorString(__result__)); \
+    } while(0)
+#else
+#define CHECK_CUDA(message)
 #endif
 
 #endif
