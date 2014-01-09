@@ -33,6 +33,26 @@
 extern void guppi_read_obs_params(char *buf, 
                                   struct guppi_params *g, 
                                   struct psrfits *p);
+                                  
+/** Touch all memory pages in a databuffer (non-destructive) */
+void touch_all_pages(struct guppi_databuf *db)
+{
+    size_t pagesize = 4096;
+    volatile char *ptr;
+    int i, page;
+    for (i=0; i<db->n_block; ++i)
+    {
+        ptr = guppi_databuf_data(db, i);
+        for (page=0; page<db->block_size/pagesize; ++page)
+        {
+            volatile char dummy;
+            dummy = *ptr;
+            *ptr = dummy;
+            ptr += pagesize;
+        }
+    }
+}
+                                  
 
 /* This thread is passed a single arg, pointer
  * to the guppi_udp_params struct.  This thread should 
@@ -76,7 +96,7 @@ void *guppi_net_thread(void *_args) {
     }
     pthread_cleanup_push((void *)guppi_status_detach, &st);
     pthread_cleanup_push((void *)set_exit_status, &st);
-
+    
     /* Init status, read info */
     guppi_status_lock_safe(&st);
     hputs(st.buf, STATUS_KEY, "init");
@@ -109,6 +129,10 @@ void *guppi_net_thread(void *_args) {
         pthread_exit(NULL);
     }
     pthread_cleanup_push((void *)guppi_databuf_detach, db);
+    
+    // Touch all the pages in the network buffer to get them paged in
+    // and ready for the deluge.
+    touch_all_pages(db);    
 
     /* Set up UDP socket */
     rv = guppi_udp_init(&up);
