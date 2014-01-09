@@ -1,4 +1,3 @@
-OPT64 = /opt/dibas/dibaslibs
 CFLAGS = -g -O3 -Wall -I$(OPT64)/include -I$(CUDA)/include
 CFLAGS+= -DUSE_VEGAS_STATUSID
 NVCCFLAGS = -O3 -g -arch compute_35 -code=sm_35 -I$(CUDA)/include -I$(OPT64)/include
@@ -11,7 +10,7 @@ OBJS  = guppi_status.o guppi_databuf.o guppi_udp.o guppi_error.o \
 	write_psrfits.o read_psrfits.o misc_utils.o \
 	fold.o polyco.o hget.o hput.o sla.o downsample.o \
 	dedisperse_utils.o quantization.o privilege_management.o
-THREAD_PROGS = test_net_thread guppi_daq guppi_daq_fold 
+THREAD_PROGS = test_net_thread guppi_daq guppi_daq_fold
 THREAD_OBJS  = guppi_net_thread.o guppi_net_thread_codd.o \
 	       guppi_rawdisk_thread.o \
 	       guppi_psrfits_thread.o guppi_fold_thread.o \
@@ -32,7 +31,7 @@ psrfits.tgz: psrfits.h read_psrfits.c write_psrfits.c polyco.c polyco.h \
 	guppi_PSRFITS_v3.4_fold_template.txt \
 	guppi_PSRFITS_v3.4_search_template.txt
 	tar cvzf $@ $^
-find_dropped_blocks: find_dropped_blocks.o 
+find_dropped_blocks: find_dropped_blocks.o
 	$(CC) $(CFLAGS) $< -o $@ -L$(OPT64)/lib -lcfitsio -lm
 psrfits_subband: psrfits_subband.c psrfits_subband_cmd.o $(OBJS)
 	$(CC) $(CFLAGS) $< -o $@ psrfits_subband_cmd.o $(OBJS) $(LIBS)

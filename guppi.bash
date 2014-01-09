@@ -1,15 +1,28 @@
 #!/bin/bash
 # Set environment variables for GUPPI, bash version
-echo "This script is specific to the Shanghai Observatory"
+# NOTE! Change the location for the appropriate build environment (GreenBank or Shanghai)
+LOCATION="GreenBank"
+
+case $LOCATION in
+    GreenBank)
+        export DIBAS=/home/dibas
+        export CUDA=/opt/local/cuda
+        ;;
+    Shanghai)
+        export DIBAS=/opt/dibas
+        export CUDA=/usr/local/cuda
+        ;;
+esac
+
+echo "This script is specific to the $LOCATION Observatory"
 echo "Setting GUPPI_DIR, PATH, PYTHONPATH, LD_LIBRARY_PATH, TEMPO, PRESTO and PGPLOT_DIR for GUPPI..."
 
 export HEADAS=/opt/dibas/pulsar64/src/heasoft-6.6.2/x86_64-unknown-linux-gnu-libc2.3.4
 alias ftools=". $HEADAS/headas-init.sh"
 
-PSR64=/opt/dibas/pulsar
-OPT64=/opt/dibas/dibaslibs
+PSR64=$DIBAS/pulsar
 
-export CUDA=/usr/local/cuda
+export OPT64=$DIBAS/dibaslibs
 export GUPPI=$OPT64/dibas_repos
 export GUPPI_DIR=$GUPPI/guppi_daq
 export PRESTO=$PSR64/src/presto
