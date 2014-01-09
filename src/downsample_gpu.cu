@@ -164,6 +164,8 @@ void gpu_transpose8(char *in, char *out)
 }
 
 /// Perform a classic non-square transpose of byte values
+/// @param ds_out - if NULL data is left on GPU, otherwise the data is
+/// transferred back to the host in the pointer ds_out.
 extern "C"
 void transpose8(struct dedispersion_setup *s, int big_ds_bytes, char *ds_out)
 {
@@ -180,7 +182,7 @@ void transpose8(struct dedispersion_setup *s, int big_ds_bytes, char *ds_out)
     grid.y = (s->nchan/block.y);
     
     cudaEventRecord(start, 0);
-    CHECK_CUDA("transpose8(A)");
+    // CHECK_CUDA("transpose8(A)");
     
     gpu_transpose8<<<grid, block>>>(s->dsbuf_gpu, s->dsbuf_trans_gpu);
     CHECK_CUDA("transpose8(b)");
@@ -204,9 +206,11 @@ void transpose8(struct dedispersion_setup *s, int big_ds_bytes, char *ds_out)
     }
 }
 
-/* Detect / downsample data.  Assumes dedispersion results
+/** Detect / downsample data.  Assumes dedispersion results
  * are already in the GPU, as described in the dedispersion_setup
  * struct.
+ * @param ds_out - if NULL data is left on GPU, otherwise the data is
+ * transferred back to the host in the pointer ds_out.
  */
 extern "C"
 void downsample(struct dedispersion_setup *s, char *ds_out) {
@@ -223,7 +227,7 @@ void downsample(struct dedispersion_setup *s, char *ds_out) {
 
     cudaEventRecord(t[it], 0); it++;
     cudaEventRecord(t[it], 0); it++;
-    CHECK_CUDA("downsample(A)");
+    // CHECK_CUDA("downsample(A)");
     /* Clear out data buf */
     cudaMemset(s->dsbuf_gpu, 0, ds_bytes);
 
@@ -232,7 +236,7 @@ void downsample(struct dedispersion_setup *s, char *ds_out) {
     // Each thread block has 64 x 1 threads
     // What if we increased the dsbuf size and added a zdim of size nchan?
     // 
-    CHECK_CUDA("downsample(a)");
+    // CHECK_CUDA("downsample(a)");
     dim3 gd(s->nfft_per_block, 32, 1);
     if (s->npol==1) 
         detect_downsample_1pol<<<gd, 64>>>(s->databuf0_gpu, s->databuf1_gpu,
@@ -249,7 +253,7 @@ void downsample(struct dedispersion_setup *s, char *ds_out) {
     {
         cudaMemcpy(ds_out, s->dsbuf_gpu, ds_bytes, cudaMemcpyDeviceToHost);
     }
-    CHECK_CUDA("downsample(c)");
+    // CHECK_CUDA("downsample(c)");
     cudaEventRecord(t[it], 0); it++;
 
     /* Final timer */

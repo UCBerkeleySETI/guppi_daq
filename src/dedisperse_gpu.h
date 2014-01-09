@@ -107,7 +107,11 @@ void load_net_block_gpu(struct dedispersion_setup *ds, const unsigned char *inpu
 #define CHECK_CUDA(message) \
     do { cudaError_t __result__ = cudaGetLastError(); \
          if (__result__ != cudaSuccess) \
-             printf(message "cuda_err='%s'\n",cudaGetErrorString(__result__)); \
+         { \
+             fprintf(stderr, "cuda error %s in %s, line %d ",  \
+                     cudaGetErrorString(__result__), __FILE__, __LINE__); \
+             fprintf(stderr, message); \
+         } \
     } while(0)
 #else
 #define CHECK_CUDA(message)

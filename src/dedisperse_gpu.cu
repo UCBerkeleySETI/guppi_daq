@@ -355,6 +355,7 @@ void init_dedispersion(struct dedispersion_setup *s) {
 
 }
 
+/// Load a network data block from shared memory onto the GPU.
 extern "C"
 void load_net_block_gpu(struct dedispersion_setup *ds, const unsigned char *input)
 {
@@ -364,8 +365,8 @@ void load_net_block_gpu(struct dedispersion_setup *ds, const unsigned char *inpu
     float ttmp;
     cudaError_t result;
     
-    //cudaEventCreate(&load_start_event);
-    //cudaEventCreate(&load_stop_event);
+    cudaEventCreate(&load_start_event);
+    cudaEventCreate(&load_stop_event);
 
     // Not sure why this is necessary. Probably can skip this step (JJB)
     /* copy input data to transfer buffer */
@@ -378,14 +379,14 @@ void load_net_block_gpu(struct dedispersion_setup *ds, const unsigned char *inpu
     }
 
     /* Copy data to GPU ptr in ds */
-    //cudaEventRecord(load_start_event, 0);
+    cudaEventRecord(load_start_event, 0);
     result = cudaGetLastError();
     if (result != cudaSuccess)
     {
         printf("load_net_block_gpu(a) cuda_err='%s'\n", 
                 cudaGetErrorString(result));
     }
-    printf("load_net_blk: inbytes = %d\n", bytes_in);   
+    // printf("load_net_blk: inbytes = %d\n", bytes_in);   
     cudaMemcpy(ds->netblk_in_gpu, input, bytes_in, cudaMemcpyHostToDevice);  
     result = cudaGetLastError();
     if (result != cudaSuccess)
@@ -394,17 +395,19 @@ void load_net_block_gpu(struct dedispersion_setup *ds, const unsigned char *inpu
                 cudaGetErrorString(result));
     }
     
-    //cudaEventRecord(load_stop_event, 0);
-    //cudaEventSynchronize( load_stop_event );
-    //cudaEventElapsedTime(&ttmp, load_start_event, load_stop_event);
-    //ds->time.transfer_to_gpu += ttmp;
-    //ds->time.total2 += ttmp;
+    cudaEventRecord(load_stop_event, 0);
+    cudaEventSynchronize( load_stop_event );
+    cudaEventElapsedTime(&ttmp, load_start_event, load_stop_event);
+    ds->time.transfer_to_gpu += ttmp;
+    ds->time.total2 += ttmp;
+    cudaEventDestroy(load_start_event);
+    cudaEventDestroy(load_stop_event);
 }
 
-// Take a group of packets in a full data block and
-// reorder the data  
-// from: [samp][chan] order (datasize=32bits, 8-bit complex 2-pol)
-// into: [chan][samp] order (datasize=32bits, 8-bit complex 2-pol)
+/// Take a group of packets in a full data block and
+/// reorder the 32 bit data  
+/// from: [samp][chan] order (datasize=32bits, 8-bit complex 2-pol)
+/// into: [chan][samp] order (datasize=32bits, 8-bit complex 2-pol)
 __global__ void gpu_transpose_net_block(int *in, int *out)
 {
     int dx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -422,10 +425,9 @@ void transpose_net_block(struct dedispersion_setup *s)
 {
     cudaEvent_t start_event, stop_event;
     float ttmp;
-    cudaError_t result;
     
-    //cudaEventCreate(&start_event);
-    //cudaEventCreate(&stop_event);
+    cudaEventCreate(&start_event);
+    cudaEventCreate(&stop_event);
 
     // This layout is based upon the range of channels seen by this node
     // are between 8 and 1024, and the range of samples/packet are between 2 and 256
@@ -441,58 +443,33 @@ void transpose_net_block(struct dedispersion_setup *s)
     grid.y = (s->npts_per_block)/block.y;
     grid.z = 1;
     if (grid.x*block.x != s->nchan)
-        printf("transpose_net_block: nchan(%d) not a multiple of block size(8)\n",s->nchan); 
+        printf("transpose_net_block: nchan(%d) not a multiple of block size(%d)\n",s->nchan, block.x); 
     if (grid.y*block.y != s->npts_per_block)
-        printf("transpose_net_block: npts_per_block(%d) not a multiple of block size(8)\n",s->npts_per_block);
+        printf("transpose_net_block: npts_per_block(%d) not a multiple of block size(%d)\n",
+               s->npts_per_block, block.y);
 
-    printf("transpose_net_blk grid=%d,%d, block=%d,%d, total size=%d  bytes\n",
-            grid.x, grid.y, 
-            block.x, block.y,
-            s->nchan * s->npts_per_block * 4);
-            
-    result = cudaGetLastError();
-    if (result != cudaSuccess)
-    {
-        printf("transpose_net_block(aa) cuda_err='%s'\n", 
-                cudaGetErrorString(result));
-    }
+    CHECK_CUDA("transpose_net_block(a)");
           
-    //cudaEventRecord(start_event, 0);
-    result = cudaGetLastError();
-    if (result != cudaSuccess)
-    {
-        printf("transpose_net_block(a) cuda_err='%s'\n", 
-                cudaGetErrorString(result));
-    }
-    
+    cudaEventRecord(start_event, 0);
     gpu_transpose_net_block<<<grid,block>>>((int *)s->netblk_in_gpu, (int *)s->tbuf_gpu);
-    result = cudaGetLastError();
-    if (result != cudaSuccess)
-    {
-        printf("transpose_net_block(b) cuda_err='%s'\n", 
-                cudaGetErrorString(result));
-    }
-    // else
-        // printf("transpose_net_block(b) ok\n");
-    
-    //cudaEventRecord(stop_event, 0);
-    //cudaEventSynchronize(stop_event);
-    //cudaEventElapsedTime(&ttmp, start_event, stop_event);
-    //s->time.overlap += ttmp;
-    //s->time.total2 += ttmp;
-    
-    // debug
-    result = cudaGetLastError();
-    if (result != cudaSuccess)
-    {
-        printf("transpose_net_block(c) cuda_err='%s'\n", 
-                cudaGetErrorString(result));
-    }
+    cudaEventRecord(stop_event, 0);
 
+    CHECK_CUDA("transpose_net_block(b)");
+    
+    cudaEventSynchronize(stop_event);
+    cudaEventElapsedTime(&ttmp, start_event, stop_event);
+    s->time.overlap += ttmp;
+    s->time.total2 += ttmp;
+    cudaEventDestroy(start_event);
+    cudaEventDestroy(stop_event);
 }
 
 /* Actually do the dedispersion */
 /* TODO: add benchmarking info */
+/// Perform the dedispersion step.
+/// @parm in - if NULL means the input data is already loaded in the GPU,
+/// otherwise the data pointed to by in is transferred onto the GPU.
+/// @param out - not used.
 extern "C"
 void dedisperse(struct dedispersion_setup *s, int ichan,
         const unsigned char *in, float *out) {
@@ -533,6 +510,7 @@ void dedisperse(struct dedispersion_setup *s, int ichan,
     }
     else
     {
+        // Keep the number of performance events equal in both cases
         cudaEventRecord(t[it], 0); it++;
         cudaEventRecord(t[it], 0); it++;
     }
@@ -559,8 +537,7 @@ void dedisperse(struct dedispersion_setup *s, int ichan,
             CUFFT_FORWARD);
             
     CHECK_CUDA("dedisperse(d)");
-    
-            
+               
     cudaEventRecord(t[it], 0); it++;
     //printf("fft1 = %d\n", fft_rv);
 

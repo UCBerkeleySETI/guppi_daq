@@ -117,15 +117,13 @@ void guppi_dedisp_ds_thread(void *_args) {
 
     /* Loop */
     char *hdr_in=NULL, *hdr_out=NULL;
-    struct dedispersion_setup ds, temp_ds;
+    struct dedispersion_setup ds;
     char *curdata_out, *dsbuf;
     
     memset(&ds, 0, sizeof(ds));
     pthread_cleanup_push((void *)free_dedispersion, &ds);
     pthread_cleanup_push((void *)print_timing_report, &ds);
     int curblock_in=0, curblock_out=0, got_packet_0=0;
-    unsigned char *rawdata=NULL;
-    float *outdata=NULL;
     int imjd;
     double fmjd, offset, overlap_offset=0.0;
     int first=1;
@@ -245,49 +243,92 @@ void guppi_dedisp_ds_thread(void *_args) {
         ds.imjd = imjd;
         ds.fmjd = fmjd;
         
-        const unsigned npts_block = pf.hdr.nsblk / ds.dsfac;
         
-        
-        unsigned char *packet_data_in = (unsigned char *)guppi_databuf_data(db_in, curblock_in);
 
         /* Loop over channels in the block */
         unsigned ichan;
-        int ds_stride = ds.npol*npts_block;
-        int net_stride = ds_stride * ds.dsfac;
+        const unsigned npts_block = pf.hdr.nsblk / ds.dsfac;
 
-        // Load the whole block onto the GPU, untransposed    
-        // ds.tbuf_gpu holds the whole block 
-        load_net_block_gpu(&ds, packet_data_in);
-          
-        transpose_net_block(&ds);
+#ifdef TRANSPOSE_NETBLKS_ON_GPU
+        // The overall method used here is the following:
+        // 1. Load the whole data block onto the GPU, untransposed
+        // 2. Perform the transpose on the GPU, and leave the data in
+        //    GPU memory. The buffer is pointed to by ds->tbuf_gpu
+        // 3. Create a 'fake' copy of the dedispersion_setup structure,
+        //    and modify its pointers to point to the data for a given channel.
+        // 4. Loop through each channel, performing the dedispersion and 
+        //    downsampling. Results are built-up in the ds->dsbuf_gpu buffer.
+        // 5. After processing all the channels, perform the final transpose
+        //    on the GPU and transfer the data back onto the host directly
+        //    into the output datablock.
+
+        int ds_stride = ds.npol*npts_block;        
+        struct dedispersion_setup temp_ds;        
+        int net_stride = ds_stride * ds.dsfac;
+        unsigned char *packet_data_in = (unsigned char *)guppi_databuf_data(db_in, curblock_in); 
+               
+        /*
+        Input Data from databuf: (8 bit data) 4pol case
+        C0S0P0...C0S0Pn,C0S1P0...C0S1Pn,C0SmP0...C0SmPn <= one ch per gpu loop
+        C1S0P0...C1S0Pn,C1S1P0...C1S1Pn,C1SmP0...C1SmPn
         
+        xdim=nsamp*npol, ydim=nchan
+        C0S0P0,C0S0P1,C0S0P2,C0S0P3,C0S1P0,C0S1P1,C0S1P2,C0S1P3...C0SnP0...
+        C1S0P0,C1S0P1,C1S0P2,C1S0P3,C1S1P0,C1S1P1,C1S1P2,C1S1P3...C1SnP0...
+        C2S0P0,C2S0P1,C2S0P2,C2S0P3,C2S1P0,C2S1P1,C2S1P2,C2S1P3...C2SnP0...
+        C3S0P0,C3S0P1,C3S0P2,C3S0P3,C3S1P0,C3S1P1,C3S1P2,C3S1P3...C3SnP0...
+        
+        Output Data: size=entire block xdim=nchan, ydim=nsamp*npol
+        C0S0P0,C1S0P0,C2S0P0,C3S0P0,C4S0P0...CnS0P0
+        C0S0P1,C1S0P1,C2S0P1,C3S0P1,C4S0P1...CnS0P1            
+        C0S0P2,C1S0P2,C2S0P2,C3S0P2,C4S0P2...CnS0P2
+        C0S0P3,C1S0P3,C2S0P3,C3S0P3,C4S0P3...CnS0P3
+        C0S1P0,C1S1P0,C2S1P0,C3S0P0,C4S1P0...CnS1P0
+        */
+        
+        // The transposed output ends up in the ds.tbuf_gpu, which is large enough
+        // to holds the whole block.
+        load_net_block_gpu(&ds, packet_data_in);          
+        transpose_net_block(&ds);       
+       
         // Make a copy of the ds so we can modify the internal pointers
         // to fool the desisperse/downsample routines, building up
-        // the entire block on the gpu for the transpose below.
+        // the entire block on the gpu for the post transpose below.
         memcpy(&temp_ds, &ds, sizeof(ds));
         for (ichan=0; ichan<ds.nchan; ichan++) 
         {
             temp_ds.dsbuf_gpu = ds.dsbuf_gpu + ichan*ds_stride;
             temp_ds.tbuf_gpu  = ds.tbuf_gpu  + ichan*net_stride;
-            /* Pointer to raw data
-             * 4 bytes per sample for 8-bit/2-pol/complex data
-             */
-            // rawdata = (unsigned char *)guppi_databuf_data(db_in, curblock_in) 
-            //     + (size_t)4 * pf.hdr.nsblk * ichan;
-
             /* Call dedisp fn */
             // each call fills a portion of a large output buffer on the GPU
-            dedisperse(&temp_ds, ichan, 0, 0 /* in/outdata not used */);
-
+            dedisperse(&temp_ds, ichan, 0, 0 /* in/outdata not used */);            
             /* call downsample */
-            downsample(&temp_ds, 0 /* dsbuf (NULL means leave output on GPU */);
+            downsample(&temp_ds, 0 /* NULL means leave output on GPU */);
         }
-        // copy the time stats back into the original ds
+        // copy the timing stats back into the original ds
         memcpy(&ds.time, &temp_ds.time, sizeof(ds.time));
         // Now transpose, and copy the data directly back into 
         // output data block
         transpose8(&ds, ds.nchan*ds.npol*npts_block, curdata_out);
-#if 0
+#else
+        unsigned char *rawdata=NULL;
+        float *outdata=NULL;
+
+        // transposes performed on the CPU
+        for (ichan=0; ichan<ds.nchan; ichan++) {
+
+            /* Pointer to raw data
+             * 4 bytes per sample for 8-bit/2-pol/complex data
+             */
+            rawdata = (unsigned char *)guppi_databuf_data(db_in, curblock_in)
+                + (size_t)4 * pf.hdr.nsblk * ichan;
+
+            /* Call dedisp fn */
+            dedisperse(&ds, ichan, rawdata, outdata);
+
+            /* call downsample */
+            downsample(&ds, dsbuf);
+
             //printf("%d %d\n", ichan, dsbuf[32]);
 
             // Arrange data into output array in chan, pol, samp order
@@ -298,28 +339,8 @@ void guppi_dedisp_ds_thread(void *_args) {
             // to the GPU.
             //const unsigned npts_block = 
             //    (pf.hdr.nsblk-pf.dedisp.overlap)/ds.dsfac;
-            unsigned isamp;
-            /*
-            Input Data: (8 bit data) 4pol case
-            C0S0P0...C0S0Pn,C0S1P0...C0S1Pn,C0SmP0...C0SmPn <= one ch per gpu loop
-            C1S0P0...C1S0Pn,C1S1P0...C1S1Pn,C1SmP0...C1SmPn
             
-            xdim=nsamp*npol, ydim=nchan
-            C0S0P0,C0S0P1,C0S0P2,C0S0P3,C0S1P0,C0S1P1,C0S1P2,C0S1P3...C0SnP0...
-            C1S0P0,C1S0P1,C1S0P2,C1S0P3,C1S1P0,C1S1P1,C1S1P2,C1S1P3...C1SnP0...
-            C2S0P0,C2S0P1,C2S0P2,C2S0P3,C2S1P0,C2S1P1,C2S1P2,C2S1P3...C2SnP0...
-            C3S0P0,C3S0P1,C3S0P2,C3S0P3,C3S1P0,C3S1P1,C3S1P2,C3S1P3...C3SnP0...
-            
-            Output Data: size=entire block xdim=nchan, ydim=nsamp*npol
-            C0S0P0,C1S0P0,C2S0P0,C3S0P0,C4S0P0...CnS0P0
-            C0S0P1,C1S0P1,C2S0P1,C3S0P1,C4S0P1...CnS0P1            
-            C0S0P2,C1S0P2,C2S0P2,C3S0P2,C4S0P2...CnS0P2
-            C0S0P3,C1S0P3,C2S0P3,C3S0P3,C4S0P3...CnS0P3
-            C0S1P0,C1S1P0,C2S1P0,C3S0P0,C4S1P0...CnS1P0
-            */
-
-
-
+            unsigned isamp;            
             for (isamp=0; isamp<npts_block; isamp++) 
             {
                 unsigned ipol;

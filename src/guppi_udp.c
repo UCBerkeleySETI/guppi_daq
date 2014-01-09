@@ -212,18 +212,21 @@ void guppi_udp_packet_data_copy_transpose(char *databuf, int nchan,
     const size_t bytes_per_sample = 4;
     const unsigned samp_per_packet = guppi_udp_packet_datasize(p->packet_size) 
         / bytes_per_sample / chan_per_packet;
-    const unsigned samp_per_block = packets_per_block * samp_per_packet;
 
-    char *iptr, *optr;
-    unsigned isamp,ichan;
-    static int debugfirst=1;
-    if (debugfirst)
-    {
-        printf("samp_per_block=%d, chan_per_packet=%d samp_per_packet=%d block_pkt_idx=%d\n", 
-               samp_per_block,chan_per_packet, samp_per_packet, block_pkt_idx);
-        debugfirst=0;
-    } 
-#if 0
+    char *optr;
+            
+    char *in = guppi_udp_packet_data(p);
+    optr = databuf + bytes_per_sample * (block_pkt_idx*samp_per_packet);
+    
+#ifdef TRANSPOSE_NETBLKS_ON_GPU
+    // tranpose on gpu, so just copy the packet into place as is
+    memcpy(optr, in, chan_per_packet*samp_per_packet*bytes_per_sample);
+#else
+    // transpose on CPU before loading into buffer
+    const unsigned samp_per_block = packets_per_block * samp_per_packet;
+    char *iptr;
+    unsigned isamp,ichan;    
+    
     // Arrange data from network packet format e.g:
     // S0C0P0123, S0C1P0123, S0C2P0123, ... S0CnP0123,
     // S1C0P0123, S1C1P0123, S1C2P0123, ... S1CnP0123,
@@ -239,6 +242,8 @@ void guppi_udp_packet_data_copy_transpose(char *databuf, int nchan,
     /// ...
     // SmC0P0123        
     
+    #if 0 
+    /* Previous CPU based routine, cache unfriendly */
     iptr = guppi_udp_packet_data(p);
     for (isamp=0; isamp<samp_per_packet; isamp++) {
         optr = databuf + bytes_per_sample * (block_pkt_idx*samp_per_packet 
@@ -249,11 +254,8 @@ void guppi_udp_packet_data_copy_transpose(char *databuf, int nchan,
             optr += bytes_per_sample*samp_per_block;
         }
     }
-#else
-    /* New improved cache friendly version */
-    char *in = guppi_udp_packet_data(p);
-    optr = databuf + bytes_per_sample * (block_pkt_idx*samp_per_packet);
-#if 0
+    #else
+    /* New improved more cache friendly version on CPU */
     for (ichan=0; ichan<chan_per_packet; ++ichan)
     {
         iptr = in + (ichan*bytes_per_sample);
@@ -265,20 +267,7 @@ void guppi_udp_packet_data_copy_transpose(char *databuf, int nchan,
         }
         optr += bytes_per_sample*(samp_per_block-samp_per_packet);  
     }
-#else
-    // tranpose on gpu
-    memcpy(optr, in, chan_per_packet*samp_per_packet*bytes_per_sample);
-#endif
-#endif
-
-#if 0 
-    // Old version...
-    const unsigned pkt_idx = block_pkt_idx / nchan;
-    const unsigned ichan = block_pkt_idx % nchan;
-    const unsigned offset = ichan * packets_per_block / nchan + pkt_idx;
-    memcpy(databuf + offset*guppi_udp_packet_datasize(p->packet_size), 
-            guppi_udp_packet_data(p),
-            guppi_udp_packet_datasize(p->packet_size));
+    #endif    
 #endif
 }
 
