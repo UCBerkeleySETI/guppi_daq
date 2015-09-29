@@ -131,7 +131,9 @@ void start_search_mode(struct guppi_thread_args *args, pthread_t *ids) {
     args[1].priority = get_config_key_value("psr_thread_priority", keywords);
     
     rv = pthread_create(&ids[0], NULL, guppi_net_thread, (void*)&args[0]);
+    pthread_setname_np(ids[0], "net_thread");
     rv = pthread_create(&ids[1], NULL, guppi_psrfits_thread, (void*)&args[1]);
+    pthread_setname_np(ids[1], "psrfist_thread");
 }
 
 void start_fold_mode(struct guppi_thread_args *args, pthread_t *ids) {
@@ -148,8 +150,11 @@ void start_fold_mode(struct guppi_thread_args *args, pthread_t *ids) {
     args[2].priority = get_config_key_value("psr_thread_priority", keywords);
     
     rv = pthread_create(&ids[0], NULL, guppi_net_thread, (void*)&args[0]);
+    pthread_setname_np(ids[0], "net_thread");
     rv = pthread_create(&ids[1], NULL, guppi_fold_thread, (void*)&args[1]);
+    pthread_setname_np(ids[1], "fold_thread");
     rv = pthread_create(&ids[2], NULL, guppi_psrfits_thread, (void*)&args[2]);
+    pthread_setname_np(ids[2], "psrfits_thread");
 }
 
 void start_coherent_fold_mode(struct guppi_thread_args *args, pthread_t *ids) {
@@ -166,8 +171,11 @@ void start_coherent_fold_mode(struct guppi_thread_args *args, pthread_t *ids) {
     args[2].priority = get_config_key_value("psr_thread_priority", keywords);
       
     rv = pthread_create(&ids[0], NULL, guppi_net_thread_codd, (void*)&args[0]);
+    pthread_setname_np(ids[0], "net_thread_codd");
     rv = pthread_create(&ids[1], NULL, guppi_dedisp_thread, (void*)&args[1]);
+    pthread_setname_np(ids[1], "dedisp_thread");
     rv = pthread_create(&ids[2], NULL, guppi_psrfits_thread, (void*)&args[2]);
+    pthread_setname_np(ids[2], "psrfits_thread");
 }
 
 void start_coherent_search_mode(struct guppi_thread_args *args, pthread_t *ids) {
@@ -184,8 +192,11 @@ void start_coherent_search_mode(struct guppi_thread_args *args, pthread_t *ids) 
     args[2].priority = get_config_key_value("psr_thread_priority", keywords);
     
     rv = pthread_create(&ids[0], NULL, guppi_net_thread_codd, (void*)&args[0]);
+    pthread_setname_np(ids[0], "net_thread_codd");
     rv = pthread_create(&ids[1], NULL, guppi_dedisp_ds_thread, (void*)&args[1]);
+    pthread_setname_np(ids[1], "dedisp_ds_thrd");
     rv = pthread_create(&ids[2], NULL, guppi_psrfits_thread, (void*)&args[2]);
+    pthread_setname_np(ids[2], "psrfits_thread");
 }
 
 void start_monitor_mode(struct guppi_thread_args *args, pthread_t *ids) {
@@ -199,7 +210,9 @@ void start_monitor_mode(struct guppi_thread_args *args, pthread_t *ids) {
     args[1].priority = get_config_key_value("null_thread_priority", keywords);
     
     rv = pthread_create(&ids[0], NULL, guppi_net_thread, (void*)&args[0]);
+    pthread_setname_np(ids[0], "net_thread");
     rv = pthread_create(&ids[1], NULL, guppi_null_thread, (void*)&args[1]);
+    pthread_setname_np(ids[1], "null_thread");
 }
 
 void start_raw_mode(struct guppi_thread_args *args, pthread_t *ids) {
@@ -213,7 +226,9 @@ void start_raw_mode(struct guppi_thread_args *args, pthread_t *ids) {
     args[1].priority = get_config_key_value("rawdisk_thread_priority", keywords);
     
     rv = pthread_create(&ids[0], NULL, guppi_net_thread_codd, (void*)&args[0]);
+    pthread_setname_np(ids[0], "net_thread_codd");
     rv = pthread_create(&ids[1], NULL, guppi_rawdisk_thread, (void*)&args[1]);
+    pthread_setname_np(ids[1], "rawdisk_thread");
 }
 
 void stop_threads(struct guppi_thread_args *args, pthread_t *ids,
