@@ -164,7 +164,7 @@ int main(int argc, char *argv[]) {
     guppi_databuf_clear(dbuf_net);
     dbuf_fold = guppi_databuf_attach(foldbuf_id);
     if (dbuf_fold==NULL) {
-        fprintf(stderr, "Error connecting to guppi_databuf\n");
+        fprintf(stderr, "Error connecting to guppi_foldbuf\n");
         exit(1);
     }
     guppi_databuf_clear(dbuf_fold);

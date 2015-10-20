@@ -143,6 +143,8 @@ struct guppi_databuf *guppi_databuf_attach(int databuf_id) {
         // Doesn't exist, exit quietly otherwise complain
         if (errno!=ENOENT)
             guppi_error("guppi_databuf_attach", "shmget error");
+        else
+            guppi_error("guppi_databuf_attach", "does not exist");
         return(NULL);
     }
 
