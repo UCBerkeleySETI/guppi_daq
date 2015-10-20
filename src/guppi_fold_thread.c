@@ -17,6 +17,7 @@
 #include "fitshead.h"
 #include "psrfits.h"
 #include "guppi_error.h"
+#include "guppi_params.h"
 #include "guppi_status.h"
 #include "guppi_databuf.h"
 #include "polyco.h"

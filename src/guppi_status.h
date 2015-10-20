@@ -9,7 +9,7 @@
 
 #include <semaphore.h>
 
-#include "guppi_params.h"
+//#include "guppi_params.h"
 
 #define GUPPI_STATUS_KEY 16783408
 #define GUPPI_STATUS_SEMID "/guppi_status"
