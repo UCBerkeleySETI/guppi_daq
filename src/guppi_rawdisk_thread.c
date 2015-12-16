@@ -261,9 +261,12 @@ void guppi_rawdisk_thread(void *_args) {
 
             /* Write header to file */
             hend = ksearch(ptr, "END");
+            fwrite(ptr, (hend-ptr)+80, 1, fraw);
+#if 0
             for (ptr=ptr; ptr<=hend; ptr+=80) {
                 fwrite(ptr, 80, 1, fraw);
             }
+#endif
 
             /* Write data */
             ptr = guppi_databuf_data(db, curblock);
@@ -279,7 +282,7 @@ void guppi_rawdisk_thread(void *_args) {
                 }
             }
 #endif
-            rv = fwrite(ptr, 1, (size_t)blocksize, fraw);
+            rv = fwrite(ptr, (size_t)blocksize, 1, fraw);
             if (rv != blocksize) { 
                 guppi_error("guppi_rawdisk_thread", 
                         "Error writing data.");
