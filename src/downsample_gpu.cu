@@ -206,6 +206,31 @@ void transpose8(struct dedispersion_setup *s, int big_ds_bytes, char *ds_out)
     }
 }
 
+/// Transfer tbuf_gpu back to host memory.
+/// @param ds_out - if NULL data is left on GPU, otherwise the data is
+/// transferred back to the host in the pointer ds_out.
+extern "C"
+void transfer_to_host(struct dedispersion_setup *s, int big_ds_bytes, char *ds_out)
+{
+    cudaEvent_t start, stop;
+    float transp_time, copy_time;
+
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+
+    /* Transfer data back to CPU if ds_out is not null*/
+    if (ds_out != 0)
+    {
+        cudaEventRecord(start, 0);
+        cudaMemcpy(ds_out, s->tbuf_gpu, big_ds_bytes, cudaMemcpyDeviceToHost);
+        cudaEventRecord(stop, 0);
+        cudaEventSynchronize(stop);
+        cudaEventElapsedTime(&copy_time, start, stop);
+        s->time.transfer_to_host += copy_time;
+        s->time.total2 += copy_time;
+    }
+}
+
 /** Detect / downsample data.  Assumes dedispersion results
  * are already in the GPU, as described in the dedispersion_setup
  * struct.
