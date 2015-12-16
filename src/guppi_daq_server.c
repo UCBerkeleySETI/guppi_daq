@@ -55,6 +55,7 @@ void *guppi_dedisp_thread(void *args);
 void *guppi_dedisp_ds_thread(void *args);
 void *guppi_psrfits_thread(void *args);
 void *guppi_null_thread(void *args);
+void *guppi_gpu_transpose_thread(void *args);
 void *guppi_rawdisk_thread(void *args);
 int   setup_privileges();
 
@@ -118,6 +119,17 @@ void init_monitor_mode(struct guppi_thread_args *args, int *nthread) {
     args[0].output_buffer = 1;
     args[1].input_buffer = args[0].output_buffer;   
     *nthread = 2;
+}
+
+void init_raw_mode(struct guppi_thread_args *args, int *nthread) {
+    guppi_thread_args_init(&args[0]); // net
+    guppi_thread_args_init(&args[1]); // transpose
+    guppi_thread_args_init(&args[2]); // rawdisk
+    args[0].output_buffer = 1;
+    args[1].output_buffer = 2;
+    args[1].input_buffer = args[0].output_buffer;   
+    args[2].input_buffer = args[1].output_buffer;   
+    *nthread = 3;
 }
 
 void start_search_mode(struct guppi_thread_args *args, pthread_t *ids) {
@@ -221,14 +233,19 @@ void start_raw_mode(struct guppi_thread_args *args, pthread_t *ids) {
     /* Place net thread on core */
     mask_to_cpuset(&args[0].cpuset, get_config_key_value("net_thread_mask", keywords));
     args[0].priority = get_config_key_value("net_thread_priority", keywords);
-    /* Place null thread */
-    mask_to_cpuset(&args[1].cpuset, get_config_key_value("rawdisk_thread_mask", keywords));
-    args[1].priority = get_config_key_value("rawdisk_thread_priority", keywords);
+    /* Place gpu_transpose thread */
+    mask_to_cpuset(&args[1].cpuset, get_config_key_value("gpu_transpose_thread_mask", keywords));
+    args[1].priority = get_config_key_value("gpu_transpose_thread_priority", keywords);
+    /* Place rawdisk thread */
+    mask_to_cpuset(&args[2].cpuset, get_config_key_value("rawdisk_thread_mask", keywords));
+    args[2].priority = get_config_key_value("rawdisk_thread_priority", keywords);
     
     rv = pthread_create(&ids[0], NULL, guppi_net_thread_codd, (void*)&args[0]);
     pthread_setname_np(ids[0], "net_thread_codd");
-    rv = pthread_create(&ids[1], NULL, guppi_rawdisk_thread, (void*)&args[1]);
-    pthread_setname_np(ids[1], "rawdisk_thread");
+    rv = pthread_create(&ids[1], NULL, guppi_gpu_transpose_thread, (void*)&args[1]);
+    pthread_setname_np(ids[1], "gpu_transpose_thread");
+    rv = pthread_create(&ids[2], NULL, guppi_rawdisk_thread, (void*)&args[2]);
+    pthread_setname_np(ids[2], "rawdisk_thread");
 }
 
 void stop_threads(struct guppi_thread_args *args, pthread_t *ids,
@@ -474,7 +491,7 @@ int main(int argc, char *argv[]) {
                     init_monitor_mode(args, &nthread_cur);
                     start_monitor_mode(args, thread_id);
                 } else if (strncasecmp(obs_mode, "RAW", 3)==0) {
-                    init_monitor_mode(args, &nthread_cur);
+                    init_raw_mode(args, &nthread_cur);
                     start_raw_mode(args, thread_id);
                 } else {
                     printf("  unrecognized obs_mode!\n");
