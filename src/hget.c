@@ -803,18 +803,26 @@ char *str;      /* String (returned) */
 {
     char *value;
     int lval;
+    int i;
 
     /* Get value and comment from header string */
     value = hgetc (hstring,keyword);
 
     if (value != NULL) {
         lval = strlen (value);
-        if (lval < lstr)
-            strcpy (str, value);
-        else if (lstr > 1)
+        if (lval < lstr) {
+            //strcpy (str, value);
+            for(i=0; i<lval; i++) {
+              str[i] = value[i];
+            }
+            str[lval] = '\0';
+        } else if (lstr > 1) {
             strncpy (str, value, lstr-1);
-        else
+            str[lstr-1] = '\0';
+        }
+        else {
             str[0] = value[0];
+        }
         return (1);
         }
     else
