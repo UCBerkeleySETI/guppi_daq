@@ -14,6 +14,8 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include "fitshead.h"
 #include "psrfits.h"
@@ -104,6 +106,7 @@ void guppi_rawdisk_thread(void *_args) {
     pthread_cleanup_push((void *)guppi_databuf_detach, db);
 
     /* Init output file */
+    int fdraw = 0;
     FILE *fraw = NULL;
     pthread_cleanup_push((void *)safe_fclose, fraw);
 
@@ -190,7 +193,12 @@ void guppi_rawdisk_thread(void *_args) {
                 system(cmd);
             }
             // TODO: check for file exist.
-            fraw = fopen(fname, "w");
+            fdraw = open(fname, O_CREAT|O_RDWR|O_DIRECT, 0644);
+            if (fdraw==-1) {
+                guppi_error("guppi_rawdisk_thread", "Error opening file.");
+                pthread_exit(NULL);
+            }
+            fraw = fdopen(fdraw, "w");
             if (fraw==NULL) {
                 guppi_error("guppi_rawdisk_thread", "Error opening file.");
                 pthread_exit(NULL);
@@ -224,7 +232,12 @@ void guppi_rawdisk_thread(void *_args) {
             char fname[256];
             sprintf(fname, "%s.%4.4d.raw", pf.basefilename, filenum);
             fprintf(stderr, "Opening raw file '%s'\n", fname);
-            fraw = fopen(fname, "w");
+            fdraw = open(fname, O_CREAT|O_RDWR|O_DIRECT, 0644);
+            if (fdraw==-1) {
+                guppi_error("guppi_rawdisk_thread", "Error opening file.");
+                pthread_exit(NULL);
+            }
+            fraw = fdopen(fdraw, "w");
             if (fraw==NULL) {
                 guppi_error("guppi_rawdisk_thread", "Error opening file.");
                 pthread_exit(NULL);
