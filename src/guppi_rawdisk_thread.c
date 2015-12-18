@@ -6,6 +6,7 @@
 #define _GNU_SOURCE 1
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
 #include <unistd.h>
 #include <string.h>
 #include <pthread.h>
@@ -147,6 +148,7 @@ void guppi_rawdisk_thread(void *_args) {
         }
 
         /* Parse packet size, npacket from header */
+        guppi_status_lock_safe(&st);
         hgeti4(ptr, "PKTIDX", &packetidx);
         hgeti4(ptr, "PKTSIZE", &packetsize);
         hgeti4(ptr, "NPKT", &npacket);
@@ -169,6 +171,7 @@ void guppi_rawdisk_thread(void *_args) {
                  */
                 requantize = 0;
         }
+        guppi_status_unlock_safe(&st);
 
         /* Set up data ptr for quant routines */
         pf.sub.data = (unsigned char *)guppi_databuf_data(db, curblock);
@@ -193,7 +196,7 @@ void guppi_rawdisk_thread(void *_args) {
                 system(cmd);
             }
             // TODO: check for file exist.
-            fdraw = open(fname, O_CREAT|O_RDWR|O_DIRECT, 0644);
+            fdraw = open(fname, O_CREAT|O_RDWR|O_DIRECT|O_SYNC, 0644);
             if (fdraw==-1) {
                 guppi_error("guppi_rawdisk_thread", "Error opening file.");
                 pthread_exit(NULL);
@@ -228,11 +231,12 @@ void guppi_rawdisk_thread(void *_args) {
         /* See if we need to open next file */
         if (block_count >= blocks_per_file) {
             fclose(fraw);
+            close(fdraw);
             filenum++;
             char fname[256];
             sprintf(fname, "%s.%4.4d.raw", pf.basefilename, filenum);
             fprintf(stderr, "Opening raw file '%s'\n", fname);
-            fdraw = open(fname, O_CREAT|O_RDWR|O_DIRECT, 0644);
+            fdraw = open(fname, O_CREAT|O_RDWR|O_DIRECT|O_SYNC, 0644);
             if (fdraw==-1) {
                 guppi_error("guppi_rawdisk_thread", "Error opening file.");
                 pthread_exit(NULL);
@@ -257,12 +261,16 @@ void guppi_rawdisk_thread(void *_args) {
             /* Does the quantization in-place */
             quantize_2bit(&pf, mean, std);
             /* Update some parameters for output */
+            guppi_status_lock_safe(&st);
             hputi4(ptr, "BLOCSIZE", pf.sub.bytes_per_subint);
             hputi4(ptr, "NBITS", pf.hdr.nbits);
+            guppi_status_unlock_safe(&st);
         }
 
         /* Get full data block size */
+        guppi_status_lock_safe(&st);
         hgeti4(ptr, "BLOCSIZE", &blocksize);
+        guppi_status_unlock_safe(&st);
 
         /* If we got packet 0, write data to disk */
         if (got_packet_0) { 
@@ -274,7 +282,14 @@ void guppi_rawdisk_thread(void *_args) {
 
             /* Write header to file */
             hend = ksearch(ptr, "END");
-            fwrite(ptr, (hend-ptr)+80, 1, fraw);
+            rv = fwrite(ptr, (hend-ptr)+80, 1, fraw);
+            if (rv != 1) {
+                char msg[100];
+                perror("guppi_rawdisk_thread fwrite header");
+                sprintf(msg, "Error writing data (ptr=%p, hs=%d, rv=%d)", ptr, (hend-ptr)+80, rv);
+                guppi_error("guppi_rawdisk_thread", msg);
+                        //"Error writing data.");
+            }
 #if 0
             for (ptr=ptr; ptr<=hend; ptr+=80) {
                 fwrite(ptr, 80, 1, fraw);
@@ -295,10 +310,13 @@ void guppi_rawdisk_thread(void *_args) {
                 }
             }
 #endif
-            rv = fwrite(ptr, (size_t)blocksize, 1, fraw);
-            if (rv != blocksize) { 
-                guppi_error("guppi_rawdisk_thread", 
-                        "Error writing data.");
+            rv = fwrite(ptr, 1, (size_t)blocksize, fraw);
+            if (rv != blocksize) {
+                char msg[100];
+                perror("guppi_rawdisk_thread fwrite block");
+                sprintf(msg, "Error writing data (ptr=%p, bs=%d, rv=%d)", ptr, blocksize, rv);
+                guppi_error("guppi_rawdisk_thread", msg);
+                        //"Error writing data.");
             }
 
             /* Increment counter */
