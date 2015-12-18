@@ -23,7 +23,8 @@ all: $(PROGS) $(THREAD_PROGS) guppi_daq psrfits_subband \
 	test_dedisp_thread guppi_daq_dedisp guppi_daq_server
 clean:
 	rm -f $(PROGS) $(THREAD_PROGS) psrfits.tgz *~ *.o test_psrfits_0*.fits *.ptx
-INSTALL_DIR = ../bin
+#INSTALL_DIR = ../bin
+INSTALL_DIR = /usr/local/guppi_daq/bin
 install: $(PROGS) $(THREAD_PROGS) guppi_daq psrfits_subband test_dedisp_thread guppi_daq_dedisp guppi_daq_server
 	mkdir -p $(INSTALL_DIR) && \
 	cp -f $(PROGS) $(THREAD_PROGS) psrfits_subband test_dedisp_thread guppi_daq_dedisp guppi_daq_server $(INSTALL_DIR)
