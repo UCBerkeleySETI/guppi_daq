@@ -9,7 +9,7 @@
 
 #include <semaphore.h>
 
-#include "guppi_params.h"
+//#include "guppi_params.h"
 
 #ifdef USE_VEGAS_STATUSID
 #define VEGAS_STATUS_KEY 0x01001840

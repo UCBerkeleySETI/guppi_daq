@@ -20,18 +20,27 @@ CUDA_OBJS = guppi_dedisp_thread.o guppi_dedisp_ds_thread.o \
 LIBS = -L$(OPT64)/lib -lcfitsio -L$(PRESTO)/lib -lsla -lm -lpthread -lcap -lhashpipe
 CUDA_LIBS = -L$(CUDA)/lib64 -lcufft -lcuda -lcudart -lrt -lm
 all: $(PROGS) $(THREAD_PROGS) guppi_daq psrfits_subband \
-	test_dedisp_thread guppi_daq_dedisp guppi_daq_server
+	test_dedisp_thread guppi_daq_dedisp guppi_daq_server \
+	libguppi_status.so
 clean:
 	rm -f $(PROGS) $(THREAD_PROGS) psrfits.tgz *~ *.o test_psrfits_0*.fits *.ptx
-#INSTALL_DIR = ../bin
-INSTALL_DIR = /usr/local/guppi_daq/bin
-install: $(PROGS) $(THREAD_PROGS) guppi_daq psrfits_subband test_dedisp_thread guppi_daq_dedisp guppi_daq_server
-	mkdir -p $(INSTALL_DIR) && \
-	cp -f $(PROGS) $(THREAD_PROGS) psrfits_subband test_dedisp_thread guppi_daq_dedisp guppi_daq_server $(INSTALL_DIR)
+INSTALL_DIR = /usr/local/guppi_daq
+BIN_DIR = $(INSTALL_DIR)/bin
+INC_DIR = $(INSTALL_DIR)/include
+LIB_DIR = $(INSTALL_DIR)/lib
+install: $(PROGS) $(THREAD_PROGS) guppi_daq psrfits_subband
+	mkdir -p $(BIN_DIR) && \
+	cp -f $(PROGS) $(THREAD_PROGS) psrfits_subband $(BIN_DIR) && \
+	mkdir -p $(INC_DIR) && \
+	cp -f guppi_error.h guppi_status.h fitshead.h $(INC_DIR) && \
+	mkdir -p $(LIB_DIR) && \
+	cp -f libguppi_status.so $(LIB_DIR)
 psrfits.tgz: psrfits.h read_psrfits.c write_psrfits.c polyco.c polyco.h \
 	guppi_PSRFITS_v3.4_fold_template.txt \
 	guppi_PSRFITS_v3.4_search_template.txt
 	tar cvzf $@ $^
+libguppi_status.so: guppi_status.h guppi_status.c guppi_error.h guppi_error.c hput.c hget.c
+	gcc -shared -fPIC -pthread -o $@ $^ -lm
 find_dropped_blocks: find_dropped_blocks.o
 	$(CC) $(CFLAGS) $< -o $@ -L$(OPT64)/lib -lcfitsio -lm
 psrfits_subband: psrfits_subband.c psrfits_subband_cmd.o $(OBJS)
