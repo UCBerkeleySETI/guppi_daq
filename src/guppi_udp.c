@@ -120,13 +120,18 @@ unsigned long long change_endian64(const unsigned long long *d) {
     return(tmp);
 }
 
-unsigned long long guppi_udp_packet_seq_num(const struct guppi_udp_packet *p) {
-    // XXX Temp for new baseband mode, blank out top 8 bits which 
+unsigned long long guppi_udp_packet_seq_num(const struct guppi_udp_packet *p)
+{
+    return guppi_udp_packet_seq_num_from_payload(p->data);
+}
+
+unsigned long long guppi_udp_packet_seq_num_from_payload(const char *payload)
+{
+    // XXX Temp for new baseband mode, blank out top 8 bits which
     // contain channel info.
-    unsigned long long tmp = change_endian64((unsigned long long *)p->data);
+    unsigned long long tmp = change_endian64((unsigned long long *)payload);
     tmp &= 0x00FFFFFFFFFFFFFF;
     return(tmp);
-    //return(change_endian64((unsigned long long *)(p->data)));
 }
 
 #define PACKET_SIZE_ORIG ((size_t)8208)
@@ -152,49 +157,70 @@ size_t guppi_udp_packet_datasize(size_t packet_size) {
         return(packet_size - 2*sizeof(unsigned long long));
 }
 
-char *guppi_udp_packet_data(const struct guppi_udp_packet *p) {
+const char *guppi_udp_packet_data(const struct guppi_udp_packet *p)
+{
+    return guppi_udp_packet_data_from_payload(p->data, p->packet_size);
+}
+
+const char *guppi_udp_packet_data_from_payload(const char *payload, size_t payload_size)
+{
     /* This is valid for all guppi packet formats
      * PASP has 16 bytes of header rather than 8.
      */
-    if (p->packet_size==PACKET_SIZE_PASP)
-        return((char *)(p->data) + (size_t)16);
-    return((char *)(p->data) + sizeof(unsigned long long));
+    if (payload_size==PACKET_SIZE_PASP)
+        return(payload + (size_t)16);
+    return(payload + sizeof(unsigned long long));
 }
 
-unsigned long long guppi_udp_packet_flags(const struct guppi_udp_packet *p) {
-    return(*(unsigned long long *)((char *)(p->data) 
-                + p->packet_size - sizeof(unsigned long long)));
+unsigned long long guppi_udp_packet_flags(const struct guppi_udp_packet *p)
+{
+    return guppi_udp_packet_flags_from_payload(p->data, p->packet_size);
 }
+
+unsigned long long guppi_udp_packet_flags_from_payload(const char *payload, size_t payload_size)
+{
+    return(*(unsigned long long *)((char *)(payload)
+                + payload_size - sizeof(unsigned long long)));
+}
+
 
 /* Copy the data portion of a guppi udp packet to the given output
  * address.  This function takes care of expanding out the 
  * "missing" channels in 1SFA packets.
  */
-void guppi_udp_packet_data_copy(char *out, const struct guppi_udp_packet *p) {
-    if (p->packet_size==PACKET_SIZE_1SFA_OLD) {
-        /* Expand out, leaving space for missing data.  So far only 
+void guppi_udp_packet_data_copy(char *out, const struct guppi_udp_packet *p)
+{
+    return guppi_udp_packet_data_copy_from_payload(out, p->data, p->packet_size);
+}
+
+void guppi_udp_packet_data_copy_from_payload(char *out, const char *payload, size_t payload_size)
+{
+    const char *packet_data = guppi_udp_packet_data_from_payload(payload, payload_size);
+
+    if (payload_size==PACKET_SIZE_1SFA_OLD) {
+        /* Expand out, leaving space for missing data.  So far only
          * need to deal with 4k-channel case of 2 spectra per packet.
-         * May need to be updated in the future if 1SFA works with 
+         * May need to be updated in the future if 1SFA works with
          * different numbers of channels.
          *
-         * TODO: Update 5/12/2009, newer 1SFA modes always will have full 
+         * TODO: Update 5/12/2009, newer 1SFA modes always will have full
          * data contents, and the old 4k ones never really worked, so
          * this code can probably be deleted.
          */
         const size_t pad = 16;
         const size_t spec_data_size = 4096 - 2*pad;
         memset(out, 0, pad);
-        memcpy(out + pad, guppi_udp_packet_data(p), spec_data_size);
+        memcpy(out + pad, packet_data, spec_data_size);
         memset(out + pad + spec_data_size, 0, 2*pad);
-        memcpy(out + pad + spec_data_size + pad + pad, 
-                guppi_udp_packet_data(p) + spec_data_size, 
+        memcpy(out + pad + spec_data_size + pad + pad,
+                packet_data + spec_data_size,
                 spec_data_size);
         memset(out + pad + spec_data_size + pad
                 + pad + spec_data_size, 0, pad);
     } else {
         /* Packet has full data, just do a memcpy */
-        memcpy(out, guppi_udp_packet_data(p), 
-                guppi_udp_packet_datasize(p->packet_size));
+        memcpy(out, packet_data,
+                guppi_udp_packet_datasize(payload_size));
     }
 }
 
@@ -207,17 +233,27 @@ void guppi_udp_packet_data_copy(char *out, const struct guppi_udp_packet *p) {
  */
 void guppi_udp_packet_data_copy_transpose(char *databuf, int nchan,
         unsigned block_pkt_idx, unsigned packets_per_block,
-        const struct guppi_udp_packet *p) {
+        const struct guppi_udp_packet *p)
+{
+    return guppi_udp_packet_data_copy_transpose_from_payload(databuf, nchan,
+            block_pkt_idx, packets_per_block,
+            p->data, p->packet_size);
+}
+
+void guppi_udp_packet_data_copy_transpose_from_payload(char *databuf, int nchan,
+        unsigned block_pkt_idx, unsigned packets_per_block,
+        const char *payload, size_t payload_size)
+{
     const unsigned chan_per_packet = nchan;
     const size_t bytes_per_sample = 4;
-    const unsigned samp_per_packet = guppi_udp_packet_datasize(p->packet_size) 
+    const unsigned samp_per_packet = guppi_udp_packet_datasize(payload_size)
         / bytes_per_sample / chan_per_packet;
 
     char *optr;
-            
-    char *in = guppi_udp_packet_data(p);
+
+    const char *in = guppi_udp_packet_data_from_payload(payload, payload_size);
     optr = databuf + bytes_per_sample * (block_pkt_idx*samp_per_packet);
-    
+
 #ifdef TRANSPOSE_NETBLKS_ON_GPU
     // tranpose on gpu, so just copy the packet into place as is
     memcpy(optr, in, chan_per_packet*samp_per_packet*bytes_per_sample);
@@ -225,28 +261,28 @@ void guppi_udp_packet_data_copy_transpose(char *databuf, int nchan,
     // transpose on CPU before loading into buffer
     const unsigned samp_per_block = packets_per_block * samp_per_packet;
     char *iptr;
-    unsigned isamp,ichan;    
-    
+    unsigned isamp,ichan;
+
     // Arrange data from network packet format e.g:
     // S0C0P0123, S0C1P0123, S0C2P0123, ... S0CnP0123,
     // S1C0P0123, S1C1P0123, S1C2P0123, ... S1CnP0123,
     // S2C0P0123, S2C1P0123, S3C2P0123, ... S2CnP0123,
-    // S3C0P0123, S3C1P0123, S3C2P0123, ... S3CnP0123,    
+    // S3C0P0123, S3C1P0123, S3C2P0123, ... S3CnP0123,
     // SmCnP0123
-    
+
     // Into the format:
     // S0C0P0123, S1C0P0123, S2C0P0123, ... SmC0P0123
     // S0C1P0123/ S1C1P0123, S2C1P0123, ... SmC1P0123
     // S0C2P0123/ S1C2P0123, S2C2P0123, ... SmC1P0123
-    // S0C3P0123/ S1C3P0123, S2C3P0123, ... SmC1P0123        
+    // S0C3P0123/ S1C3P0123, S2C3P0123, ... SmC1P0123
     /// ...
-    // SmC0P0123        
-    
-    #if 0 
+    // SmC0P0123
+
+    #if 0
     /* Previous CPU based routine, cache unfriendly */
-    iptr = guppi_udp_packet_data(p);
+    iptr = guppi_udp_packet_data_from_payload(payload, payload_size);
     for (isamp=0; isamp<samp_per_packet; isamp++) {
-        optr = databuf + bytes_per_sample * (block_pkt_idx*samp_per_packet 
+        optr = databuf + bytes_per_sample * (block_pkt_idx*samp_per_packet
                 + isamp);
         for (ichan=0; ichan<chan_per_packet; ichan++) {
             memcpy(optr, iptr, bytes_per_sample);
@@ -265,9 +301,9 @@ void guppi_udp_packet_data_copy_transpose(char *databuf, int nchan,
             optr += bytes_per_sample;
             iptr += chan_per_packet*bytes_per_sample;
         }
-        optr += bytes_per_sample*(samp_per_block-samp_per_packet);  
+        optr += bytes_per_sample*(samp_per_block-samp_per_packet);
     }
-    #endif    
+    #endif
 #endif
 }
 
@@ -276,14 +312,21 @@ size_t parkes_udp_packet_datasize(size_t packet_size) {
 }
 
 void parkes_to_guppi(struct guppi_udp_packet *b, const int acc_len, 
-        const int npol, const int nchan) {
+        const int npol, const int nchan)
+{
+    parkes_to_guppi_from_payload(b->data, acc_len, npol, nchan);
+}
+
+void parkes_to_guppi_from_payload(char *payload, const int acc_len, 
+        const int npol, const int nchan)
+{
 
     /* Convert IBOB clock count to packet count.
      * This assumes 2 samples per IBOB clock, and that
      * acc_len is the actual accumulation length (=reg_acclen+1).
      */
     const unsigned int counts_per_packet = (nchan/2) * acc_len;
-    unsigned long long *packet_idx = (unsigned long long *)b->data;
+    unsigned long long *packet_idx = (unsigned long long *)payload;
     (*packet_idx) = change_endian64(packet_idx);
     (*packet_idx) /= counts_per_packet;
     (*packet_idx) = change_endian64(packet_idx);
@@ -292,7 +335,7 @@ void parkes_to_guppi(struct guppi_udp_packet *b, const int acc_len,
     int i;
     char tmp[GUPPI_MAX_PACKET_SIZE];
     char *pol0, *pol1, *pol2, *pol3, *in;
-    in = b->data + sizeof(long long);
+    in = payload + sizeof(long long);
     if (npol==2) {
         pol0 = &tmp[0];
         pol1 = &tmp[nchan];
@@ -317,7 +360,7 @@ void parkes_to_guppi(struct guppi_udp_packet *b, const int acc_len,
             *pol3 = *in; in++; pol3++;
         }
     }
-    memcpy(b->data + sizeof(long long), tmp, sizeof(char) * npol * nchan);
+    memcpy(payload + sizeof(long long), tmp, sizeof(char) * npol * nchan);
 }
 
 int guppi_udp_close(struct guppi_udp_params *p) {

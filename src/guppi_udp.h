@@ -45,10 +45,13 @@ struct guppi_udp_packet {
     char data[GUPPI_MAX_PACKET_SIZE]; /* packet data */
 };
 unsigned long long guppi_udp_packet_seq_num(const struct guppi_udp_packet *p);
-char *guppi_udp_packet_data(const struct guppi_udp_packet *p);
+unsigned long long guppi_udp_packet_seq_num_from_payload(const char *payload);
+const char *guppi_udp_packet_data(const struct guppi_udp_packet *p);
+const char *guppi_udp_packet_data_from_payload(const char *payload, size_t payload_size);
 size_t guppi_udp_packet_datasize(size_t packet_size);
 size_t parkes_udp_packet_datasize(size_t packet_size);
 unsigned long long guppi_udp_packet_flags(const struct guppi_udp_packet *p);
+unsigned long long guppi_udp_packet_flags_from_payload(const char *payload, size_t payload_size);
 
 /* Use sender and port fields in param struct to init
  * the other values, bind socket, etc.
@@ -64,16 +67,22 @@ int guppi_udp_recv(struct guppi_udp_params *p, struct guppi_udp_packet *b);
 /* Convert a Parkes-style packet to a GUPPI-style packet */
 void parkes_to_guppi(struct guppi_udp_packet *b, const int acc_len, 
         const int npol, const int nchan);
+void parkes_to_guppi_from_payload(char *payload, const int acc_len, 
+        const int npol, const int nchan);
 
 /* Copy a guppi packet to the specified location in memory, 
  * expanding out missing channels for 1SFA packets.
  */
 void guppi_udp_packet_data_copy(char *out, const struct guppi_udp_packet *p);
+void guppi_udp_packet_data_copy_from_payload(char *out, const char *payload, size_t payload_size);
 
 /* Copy and corner turn for baseband multichannel modes */
 void guppi_udp_packet_data_copy_transpose(char *databuf, int nchan,
         unsigned block_pkt_idx, unsigned packets_per_block,
         const struct guppi_udp_packet *p);
+void guppi_udp_packet_data_copy_transpose_from_payload(char *databuf, int nchan,
+        unsigned block_pkt_idx, unsigned packets_per_block,
+        const char *payload, size_t payload_size);
 
 /* Close out socket, etc */
 int guppi_udp_close(struct guppi_udp_params *p);
