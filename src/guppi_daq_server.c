@@ -50,6 +50,7 @@ void srv_quit(int sig) { srv_run=0; }
 /* Thread declarations */
 void *guppi_net_thread(void *args);
 void *guppi_net_thread_codd(void *args);
+void *guppi_pktsock_thread_codd(void *args);
 void *guppi_fold_thread(void *args);
 void *guppi_dedisp_thread(void *args);
 void *guppi_dedisp_ds_thread(void *args);
@@ -225,9 +226,15 @@ void start_raw_mode(struct guppi_thread_args *args, pthread_t *ids) {
     mask_to_cpuset(&args[1].cpuset, get_config_key_value("rawdisk_thread_mask", keywords));
     args[1].priority = get_config_key_value("rawdisk_thread_priority", keywords);
     
-    rv = pthread_create(&ids[0], NULL, guppi_net_thread_codd, (void*)&args[0]);
+    rv = pthread_create(&ids[0], NULL, guppi_pktsock_thread_codd, (void*)&args[0]);
+    if(rv) {
+      guppi_warn(__FUNCTION__, "error creating guppi_pktsock_thread_codd thread");
+    }
     pthread_setname_np(ids[0], "net_thread_codd");
     rv = pthread_create(&ids[1], NULL, guppi_rawdisk_thread, (void*)&args[1]);
+    if(rv) {
+      guppi_warn(__FUNCTION__, "error creating guppi_rawdisk_thread thread");
+    }
     pthread_setname_np(ids[1], "rawdisk_thread");
 }
 
