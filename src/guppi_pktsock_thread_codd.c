@@ -408,7 +408,12 @@ void *guppi_pktsock_thread_codd(void *_args) {
                 waiting=1;
             }
         } while (!p_frame && run);
-        if(!run) break;
+
+        if(!run) {
+            // We're outta here!
+            hashpipe_pktsock_release_frame(p_frame);
+            break;
+        }
 
         /* Check packet size */
         if(ps_params.packet_size == 0) {
@@ -606,6 +611,9 @@ void *guppi_pktsock_thread_codd(void *_args) {
                         &blocks[i], p_frame);
             }
         }
+
+        // Release frame back to ring buffer
+        hashpipe_pktsock_release_frame(p_frame);
 
         /* Will exit if thread has been cancelled */
         pthread_testcancel();
