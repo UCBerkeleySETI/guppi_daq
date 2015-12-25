@@ -12,6 +12,9 @@ bin/guppi_daq_fold
 bin/guppi_daq_server
 bin/psrfits_singlepulse
 bin/psrfits_subband
+bin/raw_head
+bin/raw_quant
+bin/raw_read
 bin/test_net_thread
 bin/test_psrfits
 bin/test_psrfits_read
@@ -28,6 +31,7 @@ src/fold_psrfits
 src/guppi_daq
 src/guppi_daq_fold
 src/guppi_daq_server
+src/libguppi_status.so
 src/psrfits_singlepulse
 src/psrfits_subband
 src/test_net_thread
@@ -40,3 +44,4 @@ src/test_dedisp_thread
 src/raw_quant
 src/raw_read
 src/raw_head
+src/tags
