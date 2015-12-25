@@ -18,8 +18,8 @@ int setup_privileges()
 {
 
     uid_t       user;
-    cap_value_t root_caps[2] = { CAP_SYS_NICE, CAP_SETUID };
-    cap_value_t user_caps[1] = { CAP_SYS_NICE };
+    cap_value_t root_caps[3] = { CAP_SYS_NICE, CAP_SETUID, CAP_NET_RAW };
+    cap_value_t user_caps[2] = { CAP_SYS_NICE, CAP_NET_RAW };
     cap_t       capabilities;
 
     /* Get real user ID. */
@@ -48,6 +48,7 @@ int setup_privileges()
      *      CAP_SYS_NICE    For nice(2), setpriority(2),
      *                      sched_setscheduler(2), sched_setparam(2),
      *                      sched_setaffinity(2), etc.
+     *      CAP_NET_RAW     For using packet sockets.
      *      CAP_SETUID      For setuid(), setresuid()
      * in the last two subsets. We do not need to retain any capabilities
      * over an exec().
