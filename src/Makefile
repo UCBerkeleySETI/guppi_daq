@@ -40,7 +40,7 @@ psrfits.tgz: psrfits.h read_psrfits.c write_psrfits.c polyco.c polyco.h \
 	guppi_PSRFITS_v3.4_search_template.txt
 	tar cvzf $@ $^
 libguppi_status.so: guppi_status.h guppi_status.c guppi_error.h guppi_error.c hput.c hget.c
-	gcc -shared -fPIC -pthread -o $@ $^ -lm
+	gcc -shared -fPIC -pthread -DUSE_VEGAS_STATUSID -o $@ $^ -lm
 find_dropped_blocks: find_dropped_blocks.o
 	$(CC) $(CFLAGS) $< -o $@ -L$(OPT64)/lib -lcfitsio -lm
 psrfits_subband: psrfits_subband.c psrfits_subband_cmd.o $(OBJS)
