@@ -24,6 +24,9 @@ all: $(PROGS) $(THREAD_PROGS) guppi_daq psrfits_subband \
 	libguppi_status.so
 clean:
 	rm -f $(PROGS) $(THREAD_PROGS) psrfits.tgz *~ *.o test_psrfits_0*.fits *.ptx
+tags:
+	ctags -R .
+.PHONY: all clean tags
 INSTALL_DIR = /usr/local/guppi_daq
 BIN_DIR = $(INSTALL_DIR)/bin
 INC_DIR = $(INSTALL_DIR)/include
