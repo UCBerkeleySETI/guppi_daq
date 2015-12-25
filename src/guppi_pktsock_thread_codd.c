@@ -421,6 +421,12 @@ void *guppi_pktsock_thread_codd(void *_args) {
         } else if(ps_params.packet_size != PKT_UDP_SIZE(p_frame) - 8) {
             /* Unexpected packet size, ignore? */
             nbogus_total++;
+            if(nbogus_total % 1000000 == 0) {
+                guppi_status_lock_safe(&st);
+                hputi4(st.buf, "NBOGUS", nbogus_total);
+                hputi4(st.buf, "PKTSIZE", PKT_UDP_SIZE(p_frame)-8);
+                guppi_status_unlock_safe(&st);
+            }
             continue; 
         }
 
