@@ -41,28 +41,6 @@
 #define PKTSOCK_NBLOCKS (800)
 #define PKTSOCK_NFRAMES (PKTSOCK_FRAMES_PER_BLOCK * PKTSOCK_NBLOCKS)
 
-// These get_XXX macros should probably be moved to a common header file...
-#define get_int(key, param, def) {                                      \
-        if (hgeti4(buf, (key), &(param))==0) {                          \
-            if (DEBUGOUT)                                               \
-                printf("Warning:  %s not in status shm!\n", (key));     \
-            (param) = (def);                                            \
-        }                                                               \
-    }
-
-#define get_str(key, param, len, def) {                                 \
-        if (hgets(buf, (key), (len), (param))==0) {                     \
-            if (DEBUGOUT)                                               \
-                printf("Warning:  %s not in status shm!\n", (key));     \
-            strcpy((param), (def));                                     \
-        }                                                               \
-    }
-
-// Read a status buffer all of the key observation paramters
-extern void guppi_read_obs_params(char *buf, 
-                                  struct guppi_params *g, 
-                                  struct psrfits *p);
-
 /* It's easier to just make these global ... */
 static unsigned long long npacket_total=0, ndropped_total=0, nbogus_total=0;
 
@@ -172,37 +150,6 @@ void write_baseband_packet_to_block_from_pktsock_frame(
     }
 
     d->last_pkt = seq_num;
-}
-
-struct guppi_pktsock_params {
-    /* Info needed from outside: */
-    char ifname[80];  /* Local interface name (e.g. "eth4") */
-    int port;         /* UDP receive port */
-    size_t packet_size;     /* Expected packet size, 0 = don't care */
-    char packet_format[32]; /* Packet format */
-
-    // Holds packet socket details
-    struct hashpipe_pktsock ps;
-};
-
-// Read networking parameters for packet sockets.  Same as for UDP sockets,
-// though DATAHOST should be local interface name (e.g. eth4) rather than
-// remote host name.
-void guppi_read_pktsock_params(char *buf, struct guppi_pktsock_params *p)
-{
-    get_str("DATAHOST", p->ifname, 80, "eth4");
-    get_int("DATAPORT", p->port, 50000);
-    get_str("PKTFMT", p->packet_format, 32, "GUPPI");
-    if (strncmp(p->packet_format, "PARKES", 6)==0)
-        p->packet_size = 2056;
-    else if (strncmp(p->packet_format, "1SFA", 4)==0)
-        p->packet_size = 8224;
-    else if (strncmp(p->packet_format, "FAST4K", 6)==0)
-        p->packet_size = 4128;
-    else if (strncmp(p->packet_format, "SHORT", 5)==0)
-        p->packet_size = 544;
-    else
-        p->packet_size = 8208;
 }
 
 /* This thread is passed a single arg, pointer

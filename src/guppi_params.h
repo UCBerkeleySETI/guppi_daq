@@ -7,6 +7,10 @@
 #ifndef _GUPPI_PARAMS_H
 #define _GUPPI_PARAMS_H
 
+#include "guppi_udp.h"
+#include "psrfits.h"
+#include <hashpipe.h>
+
 struct guppi_params {
     /* Packet information for the current block */
     long long packetindex;      // Index of first packet in raw data block
@@ -27,8 +31,6 @@ struct guppi_params {
     float offset[16*1024];      // Per-channel offset
 };
 
-#include "guppi_udp.h"
-#include "psrfits.h"
 void guppi_read_obs_mode(const char *buf, char *mode);
 void guppi_read_net_params(char *buf, struct guppi_udp_params *u);
 void guppi_read_subint_params(char *buf, 
@@ -38,4 +40,20 @@ void guppi_read_obs_params(char *buf,
                            struct guppi_params *g, 
                            struct psrfits *p);
 void guppi_free_psrfits(struct psrfits *p);
+
+struct guppi_pktsock_params {
+    /* Info needed from outside: */
+    char ifname[80];  /* Local interface name (e.g. "eth4") */
+    int port;         /* UDP receive port */
+    size_t packet_size;     /* Expected packet size, 0 = don't care */
+    char packet_format[32]; /* Packet format */
+
+    // Holds packet socket details
+    struct hashpipe_pktsock ps;
+};
+
+// Read networking parameters for packet sockets.  Same as for UDP sockets,
+// though DATAHOST should be local interface name (e.g. eth4) rather than
+// remote host name.
+void guppi_read_pktsock_params(char *buf, struct guppi_pktsock_params *p);
 #endif

@@ -148,6 +148,26 @@ void guppi_read_net_params(char *buf, struct guppi_udp_params *u) {
         u->packet_size = 8208;
 }
 
+// Read networking parameters for packet sockets.  Same as for UDP sockets,
+// though DATAHOST should be local interface name (e.g. eth4) rather than
+// remote host name.
+void guppi_read_pktsock_params(char *buf, struct guppi_pktsock_params *p)
+{
+    get_str("DATAHOST", p->ifname, 80, "eth4");
+    get_int("DATAPORT", p->port, 60000);
+    get_str("PKTFMT", p->packet_format, 32, "1SFA");
+    if (strncmp(p->packet_format, "PARKES", 6)==0)
+        p->packet_size = 2056;
+    else if (strncmp(p->packet_format, "1SFA", 4)==0)
+        p->packet_size = 8224;
+    else if (strncmp(p->packet_format, "FAST4K", 6)==0)
+        p->packet_size = 4128;
+    else if (strncmp(p->packet_format, "SHORT", 5)==0)
+        p->packet_size = 544;
+    else
+        p->packet_size = 8208;
+}
+
 /* Some code just needs a simple way to get the obs mode string */
 void guppi_read_obs_mode(const char *buf, char *mode) {
     get_str("OBS_MODE", mode, 24, "Unknown");
