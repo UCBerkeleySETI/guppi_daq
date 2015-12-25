@@ -28,9 +28,9 @@ INSTALL_DIR = /usr/local/guppi_daq
 BIN_DIR = $(INSTALL_DIR)/bin
 INC_DIR = $(INSTALL_DIR)/include
 LIB_DIR = $(INSTALL_DIR)/lib
-install: $(PROGS) $(THREAD_PROGS) guppi_daq psrfits_subband
+install: $(PROGS) $(THREAD_PROGS) guppi_daq psrfits_subband test_dedisp_thread guppi_daq_dedisp guppi_daq_server
 	mkdir -p $(BIN_DIR) && \
-	cp -f $(PROGS) $(THREAD_PROGS) psrfits_subband $(BIN_DIR) && \
+	cp -f $(PROGS) $(THREAD_PROGS) psrfits_subband test_dedisp_thread guppi_daq_dedisp guppi_daq_server $(BIN_DIR) && \
 	mkdir -p $(INC_DIR) && \
 	cp -f guppi_error.h guppi_status.h fitshead.h $(INC_DIR) && \
 	mkdir -p $(LIB_DIR) && \
