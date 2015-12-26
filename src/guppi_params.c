@@ -461,3 +461,14 @@ void guppi_free_psrfits(struct psrfits *p) {
     if (p->sub.dat_offsets) free(p->sub.dat_offsets);
     if (p->sub.dat_scales) free(p->sub.dat_scales);
 }
+
+// Read direct I/O mode.  This comes from the DIRECTIO status buffer key.  It
+// is intereted as a number.  Defined and non-zero numeric (e.g. 1) means to
+// use Direct I/O.  Undefined or zero or non-numeric means do NOT use Direct
+// I/O.
+int guppi_read_directio_mode(char *buf)
+{
+    int directio = 0;
+    get_int("DIRECTIO", directio, 0);
+    return directio;
+}

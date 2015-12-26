@@ -143,6 +143,8 @@ void guppi_rawdisk_thread(void *_args) {
     int first_block = 0;
     int requantize = 0;
     char *ptr, *hend;
+    int open_flags = 0;
+    int directio = 0;
     signal(SIGINT,cc);
     while (run) {
 
@@ -196,9 +198,10 @@ void guppi_rawdisk_thread(void *_args) {
             got_packet_0 = 1;
             guppi_read_obs_params(ptr, &gp, &pf);
             orig_blocksize = pf.sub.bytes_per_subint;
+            directio = guppi_read_directio_mode(ptr);
             char fname[256];
             sprintf(fname, "%s.%4.4d.raw", pf.basefilename, filenum);
-            fprintf(stderr, "Opening raw file '%s'\n", fname);
+            fprintf(stderr, "Opening raw file '%s' (directio=%d)\n", fname, directio);
             // Create the output directory if needed
             char datadir[1024];
             strncpy(datadir, pf.basefilename, 1023);
@@ -211,7 +214,11 @@ void guppi_rawdisk_thread(void *_args) {
                 system(cmd);
             }
             // TODO: check for file exist.
-            fdraw = open(fname, O_CREAT|O_RDWR|O_DIRECT|O_SYNC, 0644);
+            open_flags = O_CREAT|O_RDWR|O_SYNC;
+            if(directio) {
+              open_flags |= O_DIRECT;
+            }
+            fdraw = open(fname, open_flags, 0644);
             if (fdraw==-1) {
                 guppi_error("guppi_rawdisk_thread", "Error opening file.");
                 pthread_exit(NULL);
@@ -244,8 +251,13 @@ void guppi_rawdisk_thread(void *_args) {
             filenum++;
             char fname[256];
             sprintf(fname, "%s.%4.4d.raw", pf.basefilename, filenum);
-            fprintf(stderr, "Opening raw file '%s'\n", fname);
-            fdraw = open(fname, O_CREAT|O_RDWR|O_DIRECT|O_SYNC, 0644);
+            directio = guppi_read_directio_mode(ptr);
+            open_flags = O_CREAT|O_RDWR|O_SYNC;
+            if(directio) {
+              open_flags |= O_DIRECT;
+            }
+            fprintf(stderr, "Opening raw file '%s' (directio=%d)\n", fname, directio);
+            fdraw = open(fname, open_flags, 0644);
             if (fdraw==-1) {
                 guppi_error("guppi_rawdisk_thread", "Error opening file.");
                 pthread_exit(NULL);
@@ -283,8 +295,10 @@ void guppi_rawdisk_thread(void *_args) {
             /* Write header to file */
             hend = ksearch(ptr, "END");
             len = (hend-ptr)+80;
-            // Round up to next multiple of 512
-            len = (len+511) & ~511;
+            if(directio) {
+                // Round up to next multiple of 512
+                len = (len+511) & ~511;
+            }
             rv = write_all(fdraw, ptr, len);
             if (rv != len) {
                 char msg[100];
@@ -297,8 +311,10 @@ void guppi_rawdisk_thread(void *_args) {
             /* Write data */
             ptr = guppi_databuf_data(db, curblock);
             len = blocksize;
-            // Round up to next multiple of 512
-            len = (len+511) & ~511;
+            if(directio) {
+                // Round up to next multiple of 512
+                len = (len+511) & ~511;
+            }
             rv = write_all(fdraw, ptr, (size_t)len);
             if (rv != len) {
                 char msg[100];
