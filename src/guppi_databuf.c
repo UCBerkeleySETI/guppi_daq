@@ -178,6 +178,39 @@ int guppi_databuf_total_status(struct guppi_databuf *d) {
 
 }
 
+int guppi_databuf_bitmask_status(struct guppi_databuf *d) {
+
+    /* Get all values at once */
+    union semun arg;
+    arg.array = (unsigned short *)malloc(sizeof(unsigned short)*d->n_block);
+    memset(arg.array, 0, sizeof(unsigned short)*d->n_block);
+    semctl(d->semid, 0, GETALL, arg);
+    int i,bitmask=0;
+    for (i=0; i<d->n_block && i<8*sizeof(bitmask); i++) {
+      if(arg.array[i]) {
+        bitmask |= (1<<i);
+      }
+    }
+    free(arg.array);
+    return bitmask;
+}
+
+void guppi_databuf_str_status(struct guppi_databuf *d, char * str, size_t len) {
+    /* Get all values at once */
+    union semun arg;
+    arg.array = (unsigned short *)malloc(sizeof(unsigned short)*d->n_block);
+    memset(arg.array, 0, sizeof(unsigned short)*d->n_block);
+    semctl(d->semid, 0, GETALL, arg);
+    int i;
+    for (i=0; i<d->n_block && i<len-1; i++) {
+        str[i] = arg.array[i] ? 'X' : '.';
+    }
+    // Nul terminate
+    str[i] = '\0';
+
+    free(arg.array);
+}
+
 int guppi_databuf_wait_free(struct guppi_databuf *d, int block_id) {
     int rv;
     struct sembuf op;
