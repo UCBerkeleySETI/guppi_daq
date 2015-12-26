@@ -330,6 +330,8 @@ void *guppi_pktsock_thread_codd(void *_args) {
     long long seq_num_diff;
     double drop_frac_avg=0.0;
     const double drop_lpf = 0.25;
+    int netbuf_full = 0;
+    char netbuf_status[128] = {};
 
     // Drop all packets to date
     unsigned char *p_frame;
@@ -527,12 +529,21 @@ void *guppi_pktsock_thread_codd(void *_args) {
             /* Wait for new block to be free, then clear it
              * if necessary and fill its header with new values.
              */
+            netbuf_full = guppi_databuf_total_status(db);
+            sprintf(netbuf_status, "%d/%d", netbuf_full, db->n_block);
+            guppi_status_lock_safe(&st);
+            hputs(st.buf, STATUS_KEY, "waitfree");
+            hputs(st.buf, "NETBUFST", netbuf_status);
+            guppi_status_unlock_safe(&st);
             while ((rv=guppi_databuf_wait_free(db, lblock->block_idx)) 
                     != GUPPI_OK) {
                 if (rv==GUPPI_TIMEOUT) {
                     waiting=1;
+                    netbuf_full = guppi_databuf_total_status(db);
+                    sprintf(netbuf_status, "%d/%d", netbuf_full, db->n_block);
                     guppi_status_lock_safe(&st);
                     hputs(st.buf, STATUS_KEY, "blocked");
+                    hputs(st.buf, "NETBUFST", netbuf_status);
                     guppi_status_unlock_safe(&st);
                     continue;
                 } else {
@@ -543,6 +554,10 @@ void *guppi_pktsock_thread_codd(void *_args) {
                     break;
                 }
             }
+            guppi_status_lock_safe(&st);
+            hputs(st.buf, STATUS_KEY, "receiving");
+            guppi_status_unlock_safe(&st);
+
             memcpy(curheader, status_buf, GUPPI_STATUS_SIZE);
             //if (baseband_packets) { memset(curdata, 0, block_size); }
             if (1) { memset(curdata, 0, block_size); }
