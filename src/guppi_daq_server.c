@@ -230,7 +230,7 @@ void start_raw_mode(struct guppi_thread_args *args, pthread_t *ids) {
     if(rv) {
       guppi_warn(__FUNCTION__, "error creating guppi_pktsock_thread_codd thread");
     }
-    pthread_setname_np(ids[0], "net_thread_codd");
+    pthread_setname_np(ids[0], "pktskt_thread_c");
     rv = pthread_create(&ids[1], NULL, guppi_rawdisk_thread, (void*)&args[1]);
     if(rv) {
       guppi_warn(__FUNCTION__, "error creating guppi_rawdisk_thread thread");
