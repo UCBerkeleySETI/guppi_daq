@@ -428,6 +428,7 @@ int main(int argc, char *argv[]) {
             printf("Exit\n");
             run = 0;
             stop_threads(args, thread_id, nthread_cur);
+            nthread_cur = 0;
             cmd_wait=0;
             continue;
         } 
@@ -507,7 +508,9 @@ int main(int argc, char *argv[]) {
 
     /* Stop any running threads */
     run = 0;
-    stop_threads(args, thread_id, nthread_cur);
+    if(nthread_cur > 0) {
+        stop_threads(args, thread_id, nthread_cur);
+    }
 
     if (command_fifo>0) close(command_fifo);
 
