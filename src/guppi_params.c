@@ -149,11 +149,11 @@ void guppi_read_net_params(char *buf, struct guppi_udp_params *u) {
 }
 
 // Read networking parameters for packet sockets.  Same as for UDP sockets,
-// though DATAHOST should be local interface name (e.g. eth4) rather than
-// remote host name.
+// though BINDHOST rather than DATAHOST must be used and it should be a local
+// interface name (e.g. eth4).
 void guppi_read_pktsock_params(char *buf, struct guppi_pktsock_params *p)
 {
-    get_str("DATAHOST", p->ifname, 80, "eth4");
+    get_str("BINDHOST", p->ifname, 80, "eth4");
     get_int("DATAPORT", p->port, 60000);
     get_str("PKTFMT", p->packet_format, 32, "1SFA");
     if (strncmp(p->packet_format, "PARKES", 6)==0)
