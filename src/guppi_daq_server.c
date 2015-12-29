@@ -210,8 +210,8 @@ void start_monitor_mode(struct guppi_thread_args *args, pthread_t *ids) {
     mask_to_cpuset(&args[1].cpuset, get_config_key_value("null_thread_mask", keywords));
     args[1].priority = get_config_key_value("null_thread_priority", keywords);
     
-    rv = pthread_create(&ids[0], NULL, guppi_net_thread, (void*)&args[0]);
-    pthread_setname_np(ids[0], "net_thread");
+    rv = pthread_create(&ids[0], NULL, guppi_pktsock_thread_codd, (void*)&args[0]);
+    pthread_setname_np(ids[0], "pktskt_thread_c");
     rv = pthread_create(&ids[1], NULL, guppi_null_thread, (void*)&args[1]);
     pthread_setname_np(ids[1], "null_thread");
 }
