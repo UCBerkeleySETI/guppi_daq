@@ -376,6 +376,8 @@ void *guppi_pktsock_thread_codd(void *_args) {
                 hputi4(st.buf, "PKTSIZE", PKT_UDP_SIZE(p_frame)-8);
                 guppi_status_unlock_safe(&st);
             }
+            // Release frame!
+            hashpipe_pktsock_release_frame(p_frame);
             continue; 
         }
 
@@ -404,7 +406,12 @@ void *guppi_pktsock_thread_codd(void *_args) {
                         seq_num);
                 guppi_warn("guppi_pktsock_thread_codd", msg);
             }
-            else  { continue; } /* No going backwards */
+            else {
+              // Release frame!
+              hashpipe_pktsock_release_frame(p_frame);
+              /* No going backwards */
+              continue;
+            }
         } else { 
             force_new_block=0; 
             npacket_total += seq_num_diff;
