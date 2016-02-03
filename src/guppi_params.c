@@ -349,10 +349,10 @@ void guppi_read_obs_params(char *buf,
         backend[i] = tolower(backend[i]); 
     }
     if (strstr("CAL", p->hdr.obs_mode)!=NULL) { 
-        sprintf(base, "%s_%5d_%s_%04d_cal", backend, p->hdr.start_day, 
+        sprintf(base, "%s_%05d_%s_%04d_cal", backend, p->hdr.start_day,
                 p->hdr.source, p->hdr.scan_number);
     } else {
-        sprintf(base, "%s_%5d_%5d_%s_%04d", backend,
+        sprintf(base, "%s_%05d_%05d_%s_%04d", backend,
                 p->hdr.start_day, (int)(p->hdr.start_sec),
                 p->hdr.source, p->hdr.scan_number);
     }
