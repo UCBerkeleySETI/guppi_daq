@@ -29,6 +29,11 @@
 #define STATUS_KEY "DISKSTAT"
 #include "guppi_threads.h"
 
+//                      0000000000111111111122222222223333333333
+//                      0123456789012345678901234567890123456789
+#define BACKEND_RECORD "BACKEND = 'GUPPI   '                    " \
+                       "                                        "
+
 // Read a status buffer all of the key observation paramters
 extern void guppi_read_obs_params(char *buf, 
                                   struct guppi_params *g, 
@@ -299,6 +304,21 @@ void guppi_rawdisk_thread(void *_args) {
                 // Round up to next multiple of 512
                 len = (len+511) & ~511;
             }
+
+            /* If BACKEND record is not present, output it first. */
+            if(!ksearch(ptr, "BACKEND")) {
+                rv = write_all(fdraw, BACKEND_RECORD, 80);
+                if (rv != 80) {
+                    char msg[100];
+                    perror("guppi_rawdisk_thread write_all BACKEND record");
+                    sprintf(msg, "Error writing data (rv=%d, not 80)", rv);
+                    guppi_error("guppi_rawdisk_thread", msg);
+                }
+                /* Shorten len by the 80 bytes we just wrote. */
+                len -= 80;
+            }
+
+            /* Write header (and padding, if any) */
             rv = write_all(fdraw, ptr, len);
             if (rv != len) {
                 char msg[100];
