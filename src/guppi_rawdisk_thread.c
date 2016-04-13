@@ -29,10 +29,12 @@
 #define STATUS_KEY "DISKSTAT"
 #include "guppi_threads.h"
 
-//                      0000000000111111111122222222223333333333
-//                      0123456789012345678901234567890123456789
-#define BACKEND_RECORD "BACKEND = 'GUPPI   '                    " \
-                       "                                        "
+// 80 character string for the BACKEND header record.
+static const char BACKEND_RECORD[] =
+// 0000000000111111111122222222223333333333
+// 0123456789012345678901234567890123456789
+  "BACKEND = 'GUPPI   '                    " \
+  "                                        ";
 
 // Read a status buffer all of the key observation paramters
 extern void guppi_read_obs_params(char *buf, 
@@ -300,22 +302,22 @@ void guppi_rawdisk_thread(void *_args) {
             /* Write header to file */
             hend = ksearch(ptr, "END");
             len = (hend-ptr)+80;
+
+            // If BACKEND record is not present, insert it as first record.
+            // TODO: Verify that we have room to insert the record.
+            if(!ksearch(ptr, "BACKEND")) {
+                // Move exsiting records to make room for new first record
+                memmove(ptr+80, ptr, len);
+                // Copy in BACKEND_RECORD string
+                strncpy(ptr, BACKEND_RECORD, 80);
+                // Increase len by 80 to account for the added record
+                len += 80;
+            }
+
+            // Adjust length for any padding required for DirectIO
             if(directio) {
                 // Round up to next multiple of 512
                 len = (len+511) & ~511;
-            }
-
-            /* If BACKEND record is not present, output it first. */
-            if(!ksearch(ptr, "BACKEND")) {
-                rv = write_all(fdraw, BACKEND_RECORD, 80);
-                if (rv != 80) {
-                    char msg[100];
-                    perror("guppi_rawdisk_thread write_all BACKEND record");
-                    sprintf(msg, "Error writing data (rv=%d, not 80)", rv);
-                    guppi_error("guppi_rawdisk_thread", msg);
-                }
-                /* Shorten len by the 80 bytes we just wrote. */
-                len -= 80;
             }
 
             /* Write header (and padding, if any) */
