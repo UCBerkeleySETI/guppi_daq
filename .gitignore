@@ -23,6 +23,7 @@ bin/guppi_daq_dedisp
 bin/run_guppi_daq_server
 bin/test_dedisp_thread
 build/
+python/tags
 src/check_guppi_databuf
 src/check_guppi_status
 src/clean_guppi_shmem
