@@ -1,5 +1,5 @@
 import time
-import pyslalib as s
+from pyslalib import slalib as s
 import numpy as Num
 from psr_constants import *
 
