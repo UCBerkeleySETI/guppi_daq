@@ -98,7 +98,7 @@ class guppi_status:
         if lock: self.unlock()
 
     def update(self, key, value, comment=None):
-        self.hdr.update(key, value, comment)
+        self.hdr[key] = (value, comment)
 
     def show(self):
         for k, v in self.hdr.items():
