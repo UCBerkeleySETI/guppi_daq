@@ -122,7 +122,12 @@ class guppi_status:
         freq = float(g['freq'])
         if (g['receiver']=='Rcvr26_40'):
             freq = float(g['if_rest_freq'])
-        self.update("OBSFREQ", freq)
+        # Adjust OBSFREQ for bank number (assumes only 8 banks numbered 0 to 7)
+        banknum = float(self.hdr.get('BANKNUM', 3.5))
+        obsbw = float(self.hdr.get('OBSBW', 187.5))
+        nchan = 8*int(self.hdr.get('OBSNCHAN', 64))
+        obsfreq = freq + obsbw * (3.5 - banknum) + 1500.0/nchan/2
+        self.update("OBSFREQ", obsfreq)
         self.update("SRC_NAME", g['source'])
         if g['ant_motion']=='Tracking' or g['ant_motion']=='Guiding':
             self.update("TRK_MODE", 'TRACK')
