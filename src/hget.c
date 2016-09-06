@@ -42,7 +42,7 @@
  * Subroutine:  hgetm  (hstring,keyword, lstr, str) returns multi-keyword string
  * Subroutine:  hgetdate (hstring,keyword,date) returns date as fractional year
  * Subroutine:  hgetndec (hstring, keyword, ndec) returns number of dec. places
- * Subroutine:  hgetc  (hstring,keyword) returns character string
+ * Subroutine:  hgetc  (hstring,keyword,value_buffer) returns character string
  * Subroutine:  blsearch (hstring,keyword) returns pointer to blank lines
                 before keyword
  * Subroutine:  ksearch (hstring,keyword) returns pointer to header string entry
@@ -76,7 +76,7 @@
 static int use_saolib=0;
 #endif
 
-char *hgetc(const char *hstring, const char *keyword0);
+char *hgetc(const char *hstring, const char *keyword0, char *value_buffer);
 
 /* Don't know why this is global, seems to be just a 
  * temp buffer for parsing strings.  Made local copies in
@@ -189,9 +189,10 @@ the n'th token in the value is returned.
     int lval;
     char *dchar;
     char val[VLENGTH + 1];
+    char value_buffer[VLENGTH + 1];
 
     /* Get value and comment from header string */
-    value = hgetc(hstring, keyword);
+    value = hgetc(hstring, keyword, value_buffer);
 
     /* Translate value from ASCII to binary */
     if (value != NULL)
@@ -272,9 +273,10 @@ the n'th token in the value is returned.
     int lval;
     char *dchar;
     char val[VLENGTH + 1];
+    char value_buffer[VLENGTH + 1];
 
     /* Get value and comment from header string */
-    value = hgetc(hstring, keyword);
+    value = hgetc(hstring, keyword, value_buffer);
 
     /* Translate value from ASCII to binary */
     if (value != NULL)
@@ -352,9 +354,10 @@ the n'th token in the value is returned.
     int lval;
     char *dchar;
     char val[VLENGTH + 1];
+    char value_buffer[VLENGTH + 1];
 
     /* Get value and comment from header string */
-    value = hgetc(hstring, keyword);
+    value = hgetc(hstring, keyword, value_buffer);
 
     /* translate value from ASCII to binary */
     if (value != NULL)
@@ -413,9 +416,10 @@ the n'th token in the value is returned.
 /* Right ascension in degrees (returned) */
 {
     char *value;
+    char value_buffer[VLENGTH + 1];
 
     /* Get value from header string */
-    value = hgetc(hstring, keyword);
+    value = hgetc(hstring, keyword, value_buffer);
 
     /* Translate value from ASCII colon-delimited string to binary */
     if (value != NULL)
@@ -445,9 +449,10 @@ the n'th token in the value is returned.
 /* Right ascension in degrees (returned) */
 {
     char *value;
+    char value_buffer[VLENGTH + 1];
 
     /* Get value from header string */
-    value = hgetc(hstring, keyword);
+    value = hgetc(hstring, keyword, value_buffer);
 
     /* Translate value from ASCII colon-delimited string to binary */
     if (value != NULL)
@@ -513,9 +518,10 @@ the n'th token in the value is returned.
     int lval;
     char *dchar;
     char val[VLENGTH + 1];
+    char value_buffer[VLENGTH + 1];
 
     /* Get value and comment from header string */
-    value = hgetc(hstring, keyword);
+    value = hgetc(hstring, keyword, value_buffer);
 
     /* Translate value from ASCII to binary */
     if (value != NULL)
@@ -577,9 +583,10 @@ the n'th token in the value is returned.
     char newval;
     int lval;
     char val[VLENGTH + 1];
+    char value_buffer[VLENGTH + 1];
 
     /* Get value and comment from header string */
-    value = hgetc(hstring, keyword);
+    value = hgetc(hstring, keyword, value_buffer);
 
     /* Translate value from ASCII to binary */
     if (value != NULL)
@@ -631,9 +638,10 @@ the n'th token in the value is returned.
     int year, month, day, yday, i, hours, minutes;
     //static int mday[12] = {31,28,31,30,31,30,31,31,30,31,30,31};
     int mday[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+    char value_buffer[VLENGTH + 1];
 
     /* Get value and comment from header string */
-    value = hgetc(hstring, keyword);
+    value = hgetc(hstring, keyword, value_buffer);
 
     /* Translate value from ASCII to binary */
     if (value != NULL)
@@ -883,10 +891,11 @@ char *str;      /* String (returned) */
     /* Loop through sequentially-named keywords */
     multiline = 1;
     for (ikey = 1; ikey < 500; ikey++) {
+        char value_buffer[VLENGTH + 1];
         sprintf (keywordi, keyform, keyword, ikey);
 
         /* Get value for this keyword */
-        value = hgetc (hstring, keywordi);
+        value = hgetc (hstring, keywordi, value_buffer);
         if (value != NULL) {
             lval = strlen (value);
             if (lval < lstri)
@@ -968,9 +977,10 @@ the n'th token in the value is returned.
 {
     char *value;
     int lval;
+    char value_buffer[VLENGTH + 1];
 
     /* Get value and comment from header string */
-    value = hgetc(hstring, keyword);
+    value = hgetc(hstring, keyword, value_buffer);
 
     if (value != NULL)
     {
@@ -1012,9 +1022,10 @@ the n'th token in the value is returned.
 {
     char *value;
     int i, nchar;
+    char value_buffer[VLENGTH + 1];
 
     /* Get value and comment from header string */
-    value = hgetc(hstring, keyword);
+    value = hgetc(hstring, keyword, value_buffer);
 
     /* Find end of string and count backward to decimal point */
     *ndec = 0;
@@ -1041,7 +1052,7 @@ the n'th token in the value is returned.
 /* Extract character value for variable from FITS header string */
 
 char *
-hgetc(const char *hstring, const char *keyword0)
+hgetc(const char *hstring, const char *keyword0, char *value_buffer)
 
 /* character string containing FITS header information
 in the format <keyword>= <value> {/ <comment>} */
@@ -1052,7 +1063,7 @@ the n'th token in the value is returned.
 (the first 8 characters must be unique) */
 {
     //static char cval[80];
-    char cval[80];
+    char *cval;
     char *value;
     char cwhite[2];
     char squot[2], dquot[2], lbracket[2], rbracket[2], slash[2], comma[2];
@@ -1070,6 +1081,11 @@ the n'th token in the value is returned.
 
     if( !use_saolib ){
 #endif
+    if (value_buffer == NULL)
+    {
+        return NULL;
+    }
+    cval = value_buffer;
 
     squot[0] = (char) 39;
     squot[1] = (char) 0;
@@ -2367,4 +2383,5 @@ strfix(char *string, int fillblank, int dropzero)
  * Feb 28 2007  If header length is not set in hlength, set it to 0
  * May 31 2007  Add return value of 3 to isnum() if string has colon(s)
  * Aug 22 2007  If closing quote not found, make one up
+ * Sep  6 2016  Added third arg to hgetc() to correct a 'return ptr to stack' issue.
  */
