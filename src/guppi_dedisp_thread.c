@@ -337,7 +337,7 @@ void guppi_dedisp_thread(void *_args) {
                 hputs(hdr_out, "OBS_MODE", "CAL");
             hputi4(hdr_out, "CODD", 1);
             hputi4(hdr_out, "NBIN", fb.nbin);
-            hputi4(hdr_out, "PKTIDX", gp.packetindex);
+            hputi8(hdr_out, "PKTIDX", gp.packetindex);
 
             fb_tot.data = (float *)guppi_databuf_data(db_out, curblock_out);
             fb_tot.count = (unsigned *)((char *)fb_tot.data 

@@ -91,7 +91,7 @@ void init_block(struct datablock_stats *d, struct guppi_databuf *db,
 /* Update block header info, set filled status */
 void finalize_block(struct datablock_stats *d) {
     char *header = guppi_databuf_header(d->db, d->block_idx);
-    hputi4(header, "PKTIDX", d->packet_idx);
+    hputi8(header, "PKTIDX", d->packet_idx);
     hputi4(header, "PKTSIZE", d->packet_data_size);
     hputi4(header, "NPKT", d->npacket);
     hputi4(header, "NDROP", d->ndropped);
@@ -426,7 +426,7 @@ void *guppi_net_thread_codd(void *_args) {
                     (double)fblock->npacket;
 
             guppi_status_lock_safe(&st);
-            hputi4(st.buf, "PKTIDX", fblock->packet_idx);                          
+            hputi8(st.buf, "PKTIDX", fblock->packet_idx);                          
             hputr8(st.buf, "DROPAVG", drop_frac_avg);
             hputr8(st.buf, "DROPTOT", 
                     npacket_total ? 
