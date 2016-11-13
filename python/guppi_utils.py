@@ -5,6 +5,8 @@ import numpy as n
 #import psr_utils as psr
 import astro_utils as astro
 from pyslalib import slalib as s
+import sys
+import datetime
 
 DEGTORAD = 0.017453292519943295769236907684
 RADTODEG = 57.29577951308232087679815481410
@@ -119,15 +121,28 @@ class guppi_status:
             self.update("FD_POLN", 'LIN')
         else:
             self.update("FD_POLN", 'CIRC')
-        freq = float(g['freq'])
-        if (g['receiver']=='Rcvr26_40'):
-            freq = float(g['if_rest_freq'])
-        # Adjust OBSFREQ for bank number (assumes only 8 banks numbered 0 to 7)
-        banknum = float(self.hdr.get('BANKNUM', 3.5))
-        obsbw = float(self.hdr.get('OBSBW', 187.5))
-        nchan = 8*int(self.hdr.get('OBSNCHAN', 64))
-        obsfreq = freq + obsbw * (3.5 - banknum) + 1500.0/nchan/2
-        self.update("OBSFREQ", obsfreq)
+
+        try:
+            freq = float(g['freq'])
+            if (g['receiver']=='Rcvr26_40'):
+                freq = float(g['if_rest_freq'])
+
+            # Adjust OBSFREQ for bank number (assumes only 8 banks numbered 0 to 7)
+            banknum = float(self.hdr.get('BANKNUM', 3.5))
+            obsbw = float(self.hdr.get('OBSBW', 187.5))
+            nchan = 8*int(self.hdr.get('OBSNCHAN', 64))
+            obsfreq = freq + obsbw * (3.5 - banknum) + 1500.0/nchan/2
+            self.update("OBSFREQ", obsfreq)
+
+            beam_deg = 2.0*astro.beam_halfwidth(freq, 100.0)/60.0
+            self.update("BMAJ", beam_deg)
+            self.update("BMIN", beam_deg)
+        except ValueError:
+            sys.stderr.write(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S "))
+            sys.stderr.write("error parsing '%s' for freq " % g['freq'])
+            sys.stderr.write("or '%s' for if_rest_freq" % g['if_rest_freq'])
+            sys.stderr.write("\n")
+
         self.update("SRC_NAME", g['source'])
         if g['ant_motion']=='Tracking' or g['ant_motion']=='Guiding':
             self.update("TRK_MODE", 'TRACK')
@@ -135,22 +150,44 @@ class guppi_status:
             self.update("TRK_MODE", 'DRIFT')
         else:
             self.update("TRK_MODE", 'UNKNOWN')
-        self.ra = float(g['j2000_major'].split()[0])
-        self.ra_str = self.gbtstat.degrees2hms(self.ra)
-        self.dec = float(g['j2000_minor'].split()[0])
-        self.dec_str = self.gbtstat.degrees2dms(self.dec)
-        self.update("RA_STR", self.ra_str)
-        self.update("RA", self.ra)
-        self.update("DEC_STR", self.dec_str)
-        self.update("DEC", self.dec)
-        h, m, s = g['lst'].split(":")
-        lst = int(round(astro.hms_to_rad(int(h),int(m),float(s))*86400.0/astro.TWOPI))
-        self.update("LST", lst)
-        self.update("AZ", float(g['az_actual']))
-        self.update("ZA", 90.0-float(g['el_actual']))
-        beam_deg = 2.0*astro.beam_halfwidth(freq, 100.0)/60.0
-        self.update("BMAJ", beam_deg)
-        self.update("BMIN", beam_deg)
+
+        try:
+            self.ra = float(g['j2000_major'].split()[0])
+            self.ra_str = self.gbtstat.degrees2hms(self.ra)
+            self.dec = float(g['j2000_minor'].split()[0])
+            self.dec_str = self.gbtstat.degrees2dms(self.dec)
+            self.update("RA_STR", self.ra_str)
+            self.update("RA", self.ra)
+            self.update("DEC_STR", self.dec_str)
+            self.update("DEC", self.dec)
+        except ValueError:
+            sys.stderr.write(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S "))
+            sys.stderr.write("error parsing '%s' for j2000_major " % g['j2000_major'])
+            sys.stderr.write("or '%s' for j2000_minor" % g['j2000_minor'])
+            sys.stderr.write("\n")
+
+        try:
+            h, m, s = g['lst'].split(":")
+            lst = int(round(astro.hms_to_rad(int(h),int(m),float(s))*86400.0/astro.TWOPI))
+            self.update("LST", lst)
+        except ValueError:
+            sys.stderr.write(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S "))
+            sys.stderr.write("error parsing '%s' for lst" % g['lst'])
+            sys.stderr.write("\n")
+
+        try:
+            self.update("AZ", float(g['az_actual']))
+        except ValueError:
+            sys.stderr.write(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S "))
+            sys.stderr.write("error parsing '%s' for az_actual" % g['az_actual'])
+            sys.stderr.write("\n")
+
+        try:
+            self.update("ZA", 90.0-float(g['el_actual']))
+        except ValueError:
+            sys.stderr.write(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S "))
+            sys.stderr.write("error parsing '%s' for el_actual" % g['el_actual'])
+            sys.stderr.write("\n")
 
     def update_azza(self):
         """
