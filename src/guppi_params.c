@@ -362,9 +362,9 @@ void guppi_read_obs_params(char *buf,
     // Use a $DATADIR/$PROJID/$BACKEND/$BANK prefix for files
     if (strnlen(banknam, sizeof(banknam)) < 1)
         snprintf(banknam, sizeof(banknam), ".");
-    sprintf(p->basefilename, "%s/%s/%s%s/%c/%s", dir, p->hdr.project_id, 
+    sprintf(p->basefilename, "%s/%s/%s%s/%s/%s", dir, p->hdr.project_id, 
             p->hdr.backend, g->coherent ? "_CODD" : "", 
-            banknam[strnlen(banknam, sizeof(banknam))-1], base);
+            banknam, base);
 #endif
     { // Date and time of start
         int YYYY, MM, DD, h, m;
