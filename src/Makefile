@@ -19,7 +19,7 @@ THREAD_OBJS  = guppi_net_thread.o guppi_net_thread_codd.o guppi_pktsock_thread_c
 CUDA_OBJS = guppi_dedisp_thread.o guppi_dedisp_ds_thread.o \
 	    fold_gpu.o downsample_gpu.o dedisperse_gpu.o
 LIBS = -L$(OPT64)/lib -lcfitsio -L$(PRESTO)/lib -lsla -lm -lpthread -lcap -lhashpipe
-CUDA_LIBS = -L$(CUDA)/lib64 -lcufft -lcuda -lcudart -lrt -lm
+CUDA_LIBS = -L$(CUDA)/lib64 -L$(CUDA)/lib64/stubs -lcufft -lcuda -lcudart -lrt -lm
 all: $(PROGS) $(THREAD_PROGS) guppi_daq psrfits_subband \
 	test_dedisp_thread guppi_daq_dedisp guppi_daq_server \
 	libguppi_status.so
