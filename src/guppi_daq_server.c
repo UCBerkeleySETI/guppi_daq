@@ -27,7 +27,6 @@
 #include "guppi_status.h"
 #include "guppi_databuf.h"
 #include "guppi_params.h"
-#include "dedisperse_gpu.h"
 
 #include "guppi_thread_main.h"
 
@@ -158,6 +157,7 @@ void start_fold_mode(struct guppi_thread_args *args, pthread_t *ids) {
     pthread_setname_np(ids[2], "psrfits_thread");
 }
 
+#if 0
 void start_coherent_fold_mode(struct guppi_thread_args *args, pthread_t *ids) {
     // TODO error checking...
     int rv;
@@ -199,6 +199,7 @@ void start_coherent_search_mode(struct guppi_thread_args *args, pthread_t *ids) 
     rv = pthread_create(&ids[2], NULL, guppi_psrfits_thread, (void*)&args[2]);
     pthread_setname_np(ids[2], "psrfits_thread");
 }
+#endif
 
 void start_monitor_mode(struct guppi_thread_args *args, pthread_t *ids) {
     // TODO error checking...
@@ -336,9 +337,6 @@ int main(int argc, char *argv[]) {
     signal(SIGINT, srv_cc);
     signal(SIGTERM, srv_quit);
 
-    /* Initialize the GPU */
-    init_cuda_context();
-
     /* Loop over recv'd commands, process them */
     int cmd_wait=1;
     while (cmd_wait && srv_run) {
@@ -466,6 +464,7 @@ int main(int argc, char *argv[]) {
                 } else if (strncasecmp(obs_mode, "FOLD", 5)==0) {
                     init_fold_mode(args, &nthread_cur);
                     start_fold_mode(args, thread_id);
+#if 0
                 } else if (strncasecmp(obs_mode, "COHERENT_FOLD", 14)==0) {
                     init_fold_mode(args, &nthread_cur);
                     start_coherent_fold_mode(args, thread_id);
@@ -475,6 +474,7 @@ int main(int argc, char *argv[]) {
                 } else if (strncasecmp(obs_mode, "COHERENT_SEARCH", 16)==0) {
                     init_fold_mode(args, &nthread_cur);
                     start_coherent_search_mode(args, thread_id);
+#endif
                 } else if (strncasecmp(obs_mode, "CAL", 4)==0) {
                     init_fold_mode(args, &nthread_cur);
                     start_fold_mode(args, thread_id);

@@ -58,9 +58,8 @@ test_dedisp_thread: test_dedisp_thread.c $(THREAD_OBJS) $(OBJS) $(CUDA_OBJS)
 guppi_daq_dedisp: guppi_daq_dedisp.c $(THREAD_OBJS) $(OBJS) $(CUDA_OBJS)
 	$(CC) $(CFLAGS) $(CUDA_CFLAGS) $< -o $@ $(THREAD_OBJS) \
 		$(CUDA_OBJS) $(OBJS) $(LIBS) $(CUDA_LIBS)
-guppi_daq_server: guppi_daq_server.c $(THREAD_OBJS) $(OBJS) $(CUDA_OBJS)
-	$(CC) $(CFLAGS) $(CUDA_CFLAGS) $< -o $@ $(THREAD_OBJS) \
-		$(CUDA_OBJS) $(OBJS) $(LIBS) $(CUDA_LIBS)
+guppi_daq_server: guppi_daq_server.c $(THREAD_OBJS) $(OBJS)
+	$(CC) $(CFLAGS) $< -o $@ $(THREAD_OBJS) $(OBJS) $(LIBS)
 .SECONDEXPANSION:
 $(PROGS): $$@.c $(OBJS)
 	$(CC) $(CFLAGS) $< -o $@ $(OBJS) $(LIBS) $(THREAD_LIBS)
