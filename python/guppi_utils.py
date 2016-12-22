@@ -124,7 +124,7 @@ class guppi_status:
 
         try:
             freq = float(g['freq'])
-            if (g['receiver']=='Rcvr26_40'):
+            if (g['receiver']=='RcvrArray18_26' or g['receiver']=='Rcvr26_40'):
                 freq = float(g['if_rest_freq'])
 
             # Adjust OBSFREQ for bank number (assumes only 8 banks numbered 0 to 7)
