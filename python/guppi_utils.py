@@ -107,6 +107,11 @@ class guppi_status:
             print "'%8s' :"%k, v
         print ""
 
+    def close_gbtstatus(self):
+        if self.gbtstat is not None:
+            self.gbtstat.close()
+            self.gbtstat = None
+
     def update_with_gbtstatus(self):
         if self.gbtstat is None:
             self.gbtstat = GBTStatus()

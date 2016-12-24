@@ -97,7 +97,6 @@ PSR_fieldNames = [
        "j2000_major",
        "j2000_minor"]
 
-
 class GBTStatus:
     def __init__(self):
         self.info = 'Information'
@@ -138,6 +137,12 @@ class GBTStatus:
         self.fieldNames = PSR_fieldNames
         self.prepQuery()
         
+    def close(self):
+        if self.db is not None:
+            print 'closing database connection'
+            self.db.close()
+            self.db = None
+
     def getValue(self, key):
         # Set the value based on the key provided.
         if key is not None:
