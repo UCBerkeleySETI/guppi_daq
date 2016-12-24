@@ -1,5 +1,7 @@
 import MySQLdb, string, sys, time, os, math
 from pyslalib import slalib as s
+import sys
+import time
 
 RADTODEG    = float('57.295779513082320876798154814105170332405472466564')
 DEGTORAD    = float('1.7453292519943295769236907684886127134428718885417e-2')
@@ -99,7 +101,38 @@ PSR_fieldNames = [
 class GBTStatus:
     def __init__(self):
         self.info = 'Information'
-        self.db = MySQLdb.connect(passwd="w3bqu3ry",db="gbt_status",host="gbtdata.gbt.nrao.edu",user="gbtstatus")
+        self.db = None
+        retries = 0
+        while self.db is None:
+            try:
+                self.db = MySQLdb.connect(
+                    passwd="w3bqu3ry",
+                    db="gbt_status",
+                    host="gbtdata.gbt.nrao.edu",
+                    user="gbtstatus")
+            except MySQLdb.MySQLError as e:
+                # Print message
+                sys.stderr.write("{} [{}] {}\n".format(
+                    e.__class__.__name__, e.args[0], e.args[1]))
+                sys.stderr.flush()
+            except Exception as e:
+                # Print message
+                sys.stderr.write("{} {}\n".format(
+                    e.__class__.__name__, str(e)))
+                sys.stderr.flush()
+
+            if self.db is None:
+                retries += 1
+                if retries > 10:
+                    # Give up
+                    sys.stderr.write("Giving up after 10 tries\n")
+                    sys.stderr.flush()
+                    raise
+                # Try again in 1 second
+                sys.stderr.write("Retrying in 1 second...\n")
+                sys.stderr.flush()
+                time.sleep(1)
+
         self.cursor = self.db.cursor()
         self.noValue = "unknown"
         self.fieldNames = PSR_fieldNames
