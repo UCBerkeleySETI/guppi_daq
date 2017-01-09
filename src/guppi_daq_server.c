@@ -419,6 +419,7 @@ int main(int argc, char *argv[]) {
         // TODO: allow multiple commands in one read?
         char *ptr = strchr(cmd, '\n');
         if (ptr!=NULL) *ptr='\0'; 
+        fprintf(stderr, "guppi_daq_server: got '%s' command\n", cmd);
 
         // Process the command 
         if (strncasecmp(cmd,"QUIT",MAX_CMD_LEN)==0) {

@@ -73,6 +73,8 @@ void guppi_rawdisk_thread(void *_args) {
     /* Get args */
     struct guppi_thread_args *args = (struct guppi_thread_args *)_args;
     
+    guppi_warn("guppi_rawdisk_thread", "Thread starting!");
+
     /* Set cpu affinity */
     int rv = sched_setaffinity(0, sizeof(cpu_set_t), &args->cpuset);
     if (rv<0) { 
@@ -365,6 +367,7 @@ void guppi_rawdisk_thread(void *_args) {
 
     }
 
+    guppi_warn("guppi_rawdisk_thread", "Thread exiting!");
     pthread_exit(NULL);
 
     pthread_cleanup_pop(0); /* Closes close */

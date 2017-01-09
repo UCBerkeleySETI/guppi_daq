@@ -159,6 +159,8 @@ void write_baseband_packet_to_block_from_pktsock_frame(
  */
 void *guppi_pktsock_thread_codd(void *_args) {
 
+    guppi_warn("guppi_pktsock_thread_codd", "Thread starting!");
+
     /* Get arguments */
     struct guppi_thread_args *args = (struct guppi_thread_args *)_args;
 
@@ -594,6 +596,7 @@ void *guppi_pktsock_thread_codd(void *_args) {
         pthread_testcancel();
     }
 
+    guppi_warn("guppi_pktsock_thread_codd", "Thread exiting!");
     pthread_exit(NULL);
 
     /* Have to close all push's */
