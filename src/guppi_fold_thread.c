@@ -346,7 +346,7 @@ void guppi_fold_thread(void *_args) {
             if (strncmp(pf.hdr.obs_mode,"CAL",3))
                 hputs(hdr_out, "OBS_MODE", "PSR");
             hputi4(hdr_out, "NBIN", fb.nbin);
-            hputi4(hdr_out, "PKTIDX", gp.packetindex);
+            hputi8(hdr_out, "PKTIDX", gp.packetindex);
 
             fb.data = (float *)guppi_databuf_data(db_out, curblock_out);
             fb.count = (unsigned *)((char *)fb.data + foldbuf_data_size(&fb));

@@ -292,7 +292,7 @@ void *guppi_net_thread(void *_args) {
 
             if (curblock>=0) { 
                 /* Close out current block */
-                hputi4(curheader, "PKTIDX", curblock_seq_num);
+                hputi8(curheader, "PKTIDX", curblock_seq_num);
                 hputi4(curheader, "PKTSIZE", packet_data_size);
                 hputi4(curheader, "NPKT", npacket_block);
                 hputi4(curheader, "NDROP", ndropped_block);
@@ -306,7 +306,7 @@ void *guppi_net_thread(void *_args) {
 
             /* Put drop stats in general status area */
             guppi_status_lock_safe(&st);
-            hputi4(st.buf, "PKTIDX", curblock_seq_num);                            
+            hputi8(st.buf, "PKTIDX", curblock_seq_num);                            
             hputr8(st.buf, "DROPAVG", drop_frac_avg);
             hputr8(st.buf, "DROPTOT", 
                     npacket_total ? 
