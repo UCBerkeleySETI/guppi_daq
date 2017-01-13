@@ -132,12 +132,13 @@ class guppi_status:
             if (g['receiver']=='RcvrArray18_26' or g['receiver']=='Rcvr26_40'):
                 freq = float(g['if_rest_freq'])
 
-            # Adjust OBSFREQ for bank number (assumes only 8 banks numbered 0 to 7)
-            banknum = float(self.hdr.get('BANKNUM', 3.5))
-            obsbw = float(self.hdr.get('OBSBW', 187.5))
-            nchan = 8*int(self.hdr.get('OBSNCHAN', 64))
-            obsfreq = freq + obsbw * (3.5 - banknum) + 1500.0/nchan/2
-            self.update("OBSFREQ", obsfreq)
+            # OBSFREQ is now set by "ifmgr_listener" script
+            ## Adjust OBSFREQ for bank number (assumes only 8 banks numbered 0 to 7)
+            #banknum = float(self.hdr.get('BANKNUM', 3.5))
+            #obsbw = float(self.hdr.get('OBSBW', 187.5))
+            #nchan = 8*int(self.hdr.get('OBSNCHAN', 64))
+            #obsfreq = freq + obsbw * (3.5 - banknum) + 1500.0/nchan/2
+            #self.update("OBSFREQ", obsfreq)
 
             beam_deg = 2.0*astro.beam_halfwidth(freq, 100.0)/60.0
             self.update("BMAJ", beam_deg)
