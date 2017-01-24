@@ -15,7 +15,7 @@ g = guppi_status()
 # Fill values from gbtstatus database
 g.update_with_gbtstatus()
 
-g.update("SCANNUM", 1)
+g.update("SCAN", 1)
 g.update("OBS_MODE", "SEARCH")
 
 # Cal-specific params
@@ -24,11 +24,11 @@ g.update("CAL_DCYC", 0.5)
 g.update("CAL_PHS", 0.0)
 if (opt.cal):
     g.update("SCANLEN", 120.0)
-    g.update("BASENAME", "guppi_test_%s_%04d_cal"%(g['SRC_NAME'], g['SCANNUM']))
+    g.update("BASENAME", "guppi_test_%s_%04d_cal"%(g['SRC_NAME'], g['SCAN']))
     g.update("CAL_MODE", "ON")
 else:
     g.update("SCANLEN", 1800.0)
-    g.update("BASENAME", "guppi_test_%s_%04d"%(g['SRC_NAME'], g['SCANNUM']))
+    g.update("BASENAME", "guppi_test_%s_%04d"%(g['SRC_NAME'], g['SCAN']))
     g.update("CAL_MODE", "OFF")
 
 # GUPPI mode settings

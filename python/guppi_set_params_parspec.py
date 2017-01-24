@@ -11,7 +11,7 @@ npol = opt.npol
 
 g = guppi_status()
 
-g.update("SCANNUM", 9)
+g.update("SCAN", 9)
 
 g.update("SRC_NAME", "B0329+54")
 g.update("RA_STR", "03:32:59.36")
@@ -69,7 +69,7 @@ if npol==4:
     g.update("POL_TYPE", "IQUV");
     g.update("ACC_LEN", 13)
 
-g.update("BASENAME", "parspec_test_%s_%04d"%(g['SRC_NAME'], g['SCANNUM']))
+g.update("BASENAME", "parspec_test_%s_%04d"%(g['SRC_NAME'], g['SCAN']))
 
 g.update("TBIN", abs(g['ACC_LEN']*g['OBSNCHAN']/g['OBSBW']*1e-6))
 g.update("CHAN_BW", g['OBSBW']/g['OBSNCHAN'])

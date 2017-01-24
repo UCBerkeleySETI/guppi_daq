@@ -16,7 +16,7 @@ def add_param(option, opt_str, val, parser, *args):
 
 # Func to add a key/val setting option to the command line.
 # longopt, short are the command line flags
-# name is the shared mem key (ie, SCANNUM, RA_STR, etc)
+# name is the shared mem key (ie, SCAN, RA_STR, etc)
 # type is the value type (string, float, etc)
 # help is the help string for -h
 par = OptionParser()
@@ -55,7 +55,7 @@ par.add_option("-I", "--onlyI", dest="onlyI",
 
 # Parameter-setting options
 add_param_option("--scannum", short="-n", 
-        name="SCANNUM", type="int",
+        name="SCAN", type="int",
         help="Set scan number")
 add_param_option("--tscan", short="-T",
         name="SCANLEN", type="float",
@@ -291,11 +291,11 @@ if (opt.mode != ""):
 
 # Scan number
 try:
-    scan = g["SCANNUM"]
+    scan = g["SCAN"]
     if (opt.inc):
-        g.update("SCANNUM", scan+1)
+        g.update("SCAN", scan+1)
 except KeyError:
-    g.update("SCANNUM", 1)
+    g.update("SCAN", 1)
 
 # Apply explicit command line values
 # These will always take precedence over defaults now
