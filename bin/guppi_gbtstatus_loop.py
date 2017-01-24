@@ -19,11 +19,12 @@ signal.signal(signal.SIGTERM, close_and_exit)
 
 while (1):
     try:
-        g.lock()
-        g.read(lock=False)
+        g.read()
         g.update_with_gbtstatus()
-        g.write(lock=False)
-        g.unlock()
+        g.write()
     except:
+        # We should never get here with the lock held, but
+        # call unlock anyway just be be safe.  (There's no
+        # harm in calling unlock if already unlocked.)
         g.unlock()
     time.sleep(1)
