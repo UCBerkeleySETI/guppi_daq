@@ -91,13 +91,19 @@ class guppi_status:
 
     def read(self,lock=True):
         if lock: self.lock()
-        self.hdr = header_from_string(self.stat_buf.read())
-        if lock: self.unlock()
+        try:
+            self.hdr = header_from_string(self.stat_buf.read())
+        finally:
+            # Ensure that we always unlock if we locked
+            if lock: self.unlock()
 
     def write(self,lock=True):
         if lock: self.lock()
-        self.stat_buf.write(repr(self.hdr.ascard)+"END"+" "*77)
-        if lock: self.unlock()
+        try:
+            self.stat_buf.write(repr(self.hdr.ascard)+"END"+" "*77)
+        finally:
+            # Ensure that we always unlock if we locked
+            if lock: self.unlock()
 
     def update(self, key, value, comment=None):
         self.hdr[key] = (value, comment)
