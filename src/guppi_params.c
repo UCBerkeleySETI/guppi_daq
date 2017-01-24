@@ -289,7 +289,7 @@ void guppi_read_obs_params(char *buf,
     get_str("PROJID", p->hdr.project_id, 24, "Unknown");
     get_str("FD_POLN", p->hdr.poln_type, 8, "Unknown");
     get_str("POL_TYPE", p->hdr.poln_order, 16, "Unknown");
-    get_int("SCANNUM", p->hdr.scan_number, 1);
+    get_int("SCAN", p->hdr.scan_number, 1);
     get_str("DATADIR", dir, 200, ".");
     get_str("BANKNAM", banknam, sizeof(banknam), ".");
     if (strcmp(p->hdr.poln_order, "AA+BB")==0 ||
