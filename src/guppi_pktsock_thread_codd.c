@@ -496,6 +496,7 @@ void *guppi_pktsock_thread_codd(void *_args) {
 
             }
 
+#if 0
             /* Read/update current status shared mem */
             guppi_status_lock_safe(&st);
             if (stt_imjd!=0) {
@@ -516,6 +517,7 @@ void *guppi_pktsock_thread_codd(void *_args) {
             }
             memcpy(status_buf, st.buf, GUPPI_STATUS_SIZE);
             guppi_status_unlock_safe(&st);
+#endif
 
             /* block size possibly changed on new obs */
             /* TODO: what about overlap...
