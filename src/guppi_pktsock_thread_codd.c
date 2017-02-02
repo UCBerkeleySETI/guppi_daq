@@ -201,6 +201,7 @@ void *guppi_pktsock_thread_codd(void *_args) {
     /* Init status, read info */
     guppi_status_lock_safe(&st);
     hputs(st.buf, STATUS_KEY, "init");
+    hputs(st.buf, "DAQSTATE", "armed");
     guppi_status_unlock_safe(&st);
 
     /* Read in general parameters */
@@ -291,6 +292,13 @@ void *guppi_pktsock_thread_codd(void *_args) {
     }
     packets_per_block = block_size / packet_data_size;
 
+    const uint64_t samples_per_second = 3UL*1000*1000*1000; // 3 GHz
+    const uint64_t samples_per_spectrum = 1024;
+    const uint64_t spectra_per_packet = 32;
+
+    double dwell_seconds = 0.0;
+    uint64_t dwell_blocks = 0;
+
     /* If we're in baseband mode, figure out how much to overlap
      * the data blocks.
      */
@@ -328,7 +336,7 @@ void *guppi_pktsock_thread_codd(void *_args) {
 
     /* Misc counters, etc */
     char *curdata=NULL, *curheader=NULL;
-    unsigned long long seq_num, last_seq_num=2048, nextblock_seq_num=0;
+    unsigned long long start_seq_num=0, stop_seq_num=0, seq_num, last_seq_num=2048, nextblock_seq_num=0;
     long long seq_num_diff;
     double drop_frac_avg=0.0;
     const double drop_lpf = 0.25;
@@ -449,6 +457,23 @@ void *guppi_pktsock_thread_codd(void *_args) {
                     fblock->npacket ? 
                     (double)fblock->ndropped/(double)fblock->npacket
                     : 0.0);
+
+            // Calculate stop packet index using current value of SCANLEN
+            hgetr8(st.buf, "SCANLEN", &dwell_seconds);
+
+            // Dwell blocks is equal to:
+            //
+            //           dwell_seconds * samples/second
+            //     -------------------------------------------
+            //     samples/spectrum * spectra/pkt * pkts/block
+            //
+            // To get an integer number of blocks, simply truncate
+            dwell_blocks = trunc(dwell_seconds * samples_per_second /
+                    (samples_per_spectrum * spectra_per_packet * packets_per_block));
+
+            stop_seq_num = start_seq_num + packets_per_block * dwell_blocks;
+            hputi8(st.buf, "PKTSTOP", stop_seq_num);
+
             guppi_status_unlock_safe(&st);
 
             /* Finalize first block, and push it off the list.
@@ -505,7 +530,10 @@ void *guppi_pktsock_thread_codd(void *_args) {
 
             /* Read/update current status shared mem */
             guppi_status_lock_safe(&st);
-            if (stt_imjd!=0) {
+            if(seq_num >= stop_seq_num) {
+                hputs(st.buf, "DAQSTATE", "armed");
+                hputi4(st.buf, "STTVALID", 0);
+            } else if (stt_imjd!=0) {
 #if 0
                 hputi4(st.buf, "STT_IMJD", stt_imjd);
                 hputi4(st.buf, "STT_SMJD", stt_smjd);
@@ -519,6 +547,7 @@ void *guppi_pktsock_thread_codd(void *_args) {
                     ts[24] = '\0';
                     guppi_warn(ts, "guppi_pktsock_thread_codd STTVALID is 0, forcing STTVALID=1");
                 }
+                hputs(st.buf, "DAQSTATE", "record");
                 hputi4(st.buf, "STTVALID", 1);
             }
 #if 0
