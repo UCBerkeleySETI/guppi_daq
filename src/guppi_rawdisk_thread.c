@@ -252,6 +252,8 @@ void guppi_rawdisk_thread(void *_args) {
                 fprintf(stderr, "Computed 2-bit stats\n"); fflush(stderr);
                 first_block = 1;
             }
+        } else if (got_packet_0==0 && packetidx==0) {
+            guppi_warn("guppi_rawdisk_thread", "Got packet index 0, but sst_valid was 0! (missed scan?)");
         }
         
         /* See if we need to open next file */
