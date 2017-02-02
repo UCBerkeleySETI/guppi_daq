@@ -496,15 +496,26 @@ void *guppi_pktsock_thread_codd(void *_args) {
 
             }
 
-#if 0
             /* Read/update current status shared mem */
             guppi_status_lock_safe(&st);
             if (stt_imjd!=0) {
+#if 0
                 hputi4(st.buf, "STT_IMJD", stt_imjd);
                 hputi4(st.buf, "STT_SMJD", stt_smjd);
                 hputr8(st.buf, "STT_OFFS", stt_offs);
+#endif
+                int sttvalid;
+                hgeti4(st.buf, "STTVALID", &sttvalid);
+                if(!sttvalid) {
+                    time_t now = time(NULL);
+                    char * ts = ctime(&now);
+                    ts[24] = '\0';
+                    guppi_warn(ts, "guppi_pktsock_thread_codd STTVALID is 0, forcing STTVALID=1");
+                }
                 hputi4(st.buf, "STTVALID", 1);
-            } else {
+            }
+#if 0
+            else {
                 // Put a non-accurate start time to avoid polyco 
                 // errors.
                 get_current_mjd(&stt_imjd, &stt_smjd, &stt_offs);
@@ -515,9 +526,9 @@ void *guppi_pktsock_thread_codd(void *_args) {
                 stt_imjd = 0;
                 stt_smjd = 0;
             }
+#endif
             memcpy(status_buf, st.buf, GUPPI_STATUS_SIZE);
             guppi_status_unlock_safe(&st);
-#endif
 
             /* block size possibly changed on new obs */
             /* TODO: what about overlap...
