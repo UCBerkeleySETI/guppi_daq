@@ -203,7 +203,7 @@ void guppi_rawdisk_thread(void *_args) {
         pf.sub.data = (unsigned char *)guppi_databuf_data(db, curblock);
 
         /* Wait for packet 0 before starting write */
-        if (got_packet_0==0 && packetidx==0 && gp.stt_valid==1) {
+        if (got_packet_0==0 && packetidx==0 && gp.stt_valid) {
             got_packet_0 = 1;
             guppi_read_obs_params(ptr, &gp, &pf);
             orig_blocksize = pf.sub.bytes_per_subint;
