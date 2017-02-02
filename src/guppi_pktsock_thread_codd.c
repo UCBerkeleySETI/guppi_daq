@@ -341,6 +341,8 @@ void *guppi_pktsock_thread_codd(void *_args) {
         hashpipe_pktsock_release_frame(p_frame);
     }
 
+    guppi_warn("guppi_pktsock_thread_codd", "Thread started!");
+
     /* Main loop */
     unsigned force_new_block=0, waiting=-1;
     signal(SIGINT,cc);
@@ -401,8 +403,13 @@ void *guppi_pktsock_thread_codd(void *_args) {
         seq_num = guppi_pktsock_seq_num(p_frame);
         seq_num_diff = seq_num - last_seq_num;
         if (seq_num_diff<=0) { 
-            if (seq_num_diff<-1024) { force_new_block=1; }
-            else if (seq_num_diff==0) {
+            if (seq_num_diff<-1024) {
+              time_t now = time(NULL);
+              char * ts = ctime(&now);
+              ts[24] = '\0';
+              guppi_warn(ts, "guppi_pktsock_thread_codd forcing new frame. (reset/resync?)");
+              force_new_block=1;
+            } else if (seq_num_diff==0) {
                 char msg[256];
                 sprintf(msg, "Received duplicate packet (seq_num=%lld)", 
                         seq_num);
