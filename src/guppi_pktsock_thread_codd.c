@@ -537,8 +537,8 @@ void *guppi_pktsock_thread_codd(void *_args) {
 #if 0
                 hputi4(st.buf, "STT_IMJD", stt_imjd);
                 hputi4(st.buf, "STT_SMJD", stt_smjd);
-                hputr8(st.buf, "STT_OFFS", stt_offs);
 #endif
+                hputr8(st.buf, "STT_OFFS", stt_offs);
                 int sttvalid;
                 hgeti4(st.buf, "STTVALID", &sttvalid);
                 if(!sttvalid) {
