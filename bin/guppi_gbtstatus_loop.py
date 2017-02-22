@@ -17,14 +17,32 @@ atexit.register(g.close_gbtstatus)
 signal.signal(signal.SIGINT, close_and_exit)
 signal.signal(signal.SIGTERM, close_and_exit)
 
+for i in range(5):
+    try:
+        print 'connecting to gbtstatus database...',
+        g.connect_to_gbtstatus()
+        print 'ok'
+        break
+    except Exception as e:
+        print 'got exception:'
+        print e
+        if i < 4:
+            print 'will retry in 1 second'
+            time.sleep(1)
+
+if not g.is_connected_to_gbtstatus():
+    print "unable to connect to gbtstatus database"
+    sys.exit(1)
+
 while (1):
     try:
-        g.read()
+        g.lock()
+        g.read(lock=False)
         g.update_with_gbtstatus()
-        g.write()
+        g.write(lock=False)
     except:
-        # We should never get here with the lock held, but
-        # call unlock anyway just be be safe.  (There's no
-        # harm in calling unlock if already unlocked.)
+        pass
+    finally:
         g.unlock()
+
     time.sleep(1)

@@ -113,6 +113,13 @@ class guppi_status:
             print "'%8s' :"%k, v
         print ""
 
+    def is_connected_to_gbtstatus(self):
+        return bool(self.gbtstat)
+
+    def connect_to_gbtstatus(self):
+        if self.gbtstat is None:
+            self.gbtstat = GBTStatus()
+
     def close_gbtstatus(self):
         if self.gbtstat is not None:
             self.gbtstat.close()
