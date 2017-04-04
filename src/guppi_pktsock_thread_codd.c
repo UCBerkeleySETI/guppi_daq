@@ -372,8 +372,15 @@ void *guppi_pktsock_thread_codd(void *_args) {
 
         if(!run) {
             // We're outta here!
-            hashpipe_pktsock_release_frame(p_frame);
+            if(p_frame) {
+                hashpipe_pktsock_release_frame(p_frame);
+            }
             break;
+        }
+
+        // If we somehow get here with a NULL p_frame, just redo the loop
+        if(!p_frame) {
+            continue;
         }
 
         /* Check packet size */
