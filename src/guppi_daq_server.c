@@ -286,6 +286,7 @@ int main(int argc, char *argv[]) {
 #define MAX_CMD_LEN 1024
     char cmd[MAX_CMD_LEN];
     int command_fifo;
+    int cmd_size = 0;
     command_fifo = open(GUPPI_DAQ_CONTROL, O_RDONLY | O_NONBLOCK);
     if (command_fifo<0) {
         fprintf(stderr, "guppi_daq_server: Error opening control fifo\n");
@@ -319,7 +320,7 @@ int main(int argc, char *argv[]) {
 
     /* Thread setup */
 #define MAX_THREAD 8
-    int i;
+    int i, j;
     int nthread_cur = 0;
     struct guppi_thread_args args[MAX_THREAD];
     pthread_t thread_id[MAX_THREAD];
@@ -394,16 +395,22 @@ int main(int argc, char *argv[]) {
         }
 
         // clear the command
+        cmd_size = 0;
         memset(cmd, 0, MAX_CMD_LEN);
         for (i=0; i<2; ++i)
         {
             rv = 0;
             if (pfd[i].revents & POLLIN)
             {
-                if (read(pfd[i].fd, cmd, MAX_CMD_LEN-1)<1)
+                if ((cmd_size = read(pfd[i].fd, cmd, MAX_CMD_LEN-1))<1)
                     continue;
                 else
                 {
+                    fprintf(stderr, "read %d bytes from fd %d:", cmd_size, pfd[i].fd);
+                    for(j=0; j < cmd_size; j++) {
+                      fprintf(stderr, " %02x", cmd[j]);
+                    }
+                    fprintf(stderr, "\n");
                     rv = 1;
                     break;
                 }
