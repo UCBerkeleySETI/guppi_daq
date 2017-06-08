@@ -408,7 +408,7 @@ int main(int argc, char *argv[]) {
                 {
                     fprintf(stderr, "read %d bytes from fd %d:", cmd_size, pfd[i].fd);
                     for(j=0; j < cmd_size; j++) {
-                      fprintf(stderr, " %02x", cmd[j]);
+                      fprintf(stderr, " %02x", cmd[j] & 0xff);
                     }
                     fprintf(stderr, "\n");
                     rv = 1;
