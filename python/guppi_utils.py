@@ -100,7 +100,8 @@ class guppi_status:
     def write(self,lock=True):
         if lock: self.lock()
         try:
-            self.stat_buf.write(repr(self.hdr.ascard)+"END"+" "*77)
+            #self.stat_buf.write(repr(self.hdr.ascard)+"END"+" "*77)
+            self.stat_buf.write(self.hdr.tostring(padding=False))
         finally:
             # Ensure that we always unlock if we locked
             if lock: self.unlock()
