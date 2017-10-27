@@ -32,6 +32,7 @@
 
 
 #define GUPPI_DAQ_CONTROL "/tmp/guppi_daq_control"
+#define GUPPI_DAQCTRL_KEY "DAQCTRL"
 
 void usage() {
     fprintf(stderr,
@@ -285,6 +286,7 @@ int main(int argc, char *argv[]) {
     /* Open command FIFO for read */
 #define MAX_CMD_LEN 1024
     char cmd[MAX_CMD_LEN];
+    char prev_cmd[MAX_CMD_LEN];
     int command_fifo;
     int cmd_size = 0;
     command_fifo = open(GUPPI_DAQ_CONTROL, O_RDONLY | O_NONBLOCK);
@@ -318,6 +320,13 @@ int main(int argc, char *argv[]) {
     }
     guppi_databuf_clear(dbuf_fold);
 
+    // Initialize DAQCTRL field.  Recognized values are:
+    // "start", "stop", "monitor", "quit"
+    guppi_status_lock(&stat);
+    hputs(stat.buf, GUPPI_DAQCTRL_KEY, "stop");
+    guppi_status_unlock(&stat);
+    strcpy(prev_cmd, "stop");
+
     /* Thread setup */
 #define MAX_THREAD 8
     int i, j;
@@ -337,6 +346,11 @@ int main(int argc, char *argv[]) {
     srv_run=1;
     signal(SIGINT, srv_cc);
     signal(SIGTERM, srv_quit);
+
+    struct timespec sleep_time = {
+      .tv_sec = 0,
+      .tv_nsec = 200 * 1000 * 1000 // 200 ms
+    };
 
     /* Loop over recv'd commands, process them */
     int cmd_wait=1;
@@ -366,6 +380,7 @@ int main(int argc, char *argv[]) {
         fflush(stdout);
         fflush(stderr);
 
+#ifdef OLD_CTRL
         // Wait for data on fifo
         struct pollfd pfd[2];
         pfd[0].fd = command_fifo;
@@ -427,6 +442,21 @@ int main(int argc, char *argv[]) {
         char *ptr = strchr(cmd, '\n');
         if (ptr!=NULL) *ptr='\0'; 
         fprintf(stderr, "guppi_daq_server: got '%s' command\n", cmd);
+#else
+        // Sleep half second
+        nanosleep(&sleep_time, NULL); // TODO use second param, check return value
+
+        // clear the command
+        memset(cmd, 0, MAX_CMD_LEN);
+
+        // Read command from status buffer
+        guppi_status_lock(&stat);
+        hgets(stat.buf, GUPPI_DAQCTRL_KEY, MAX_CMD_LEN, cmd);
+        guppi_status_unlock(&stat);
+
+        // If not empty and modified...
+        if(cmd[0] && strncasecmp(cmd, prev_cmd,MAX_CMD_LEN)) {
+#endif
 
         // Process the command 
         if (strncasecmp(cmd,"QUIT",MAX_CMD_LEN)==0) {
@@ -436,6 +466,7 @@ int main(int argc, char *argv[]) {
             stop_threads(args, thread_id, nthread_cur);
             nthread_cur = 0;
             cmd_wait=0;
+            strncpy(prev_cmd, cmd, MAX_CMD_LEN);
             continue;
         } 
         
@@ -498,6 +529,7 @@ int main(int argc, char *argv[]) {
 
             }
 
+            strncpy(prev_cmd, cmd, MAX_CMD_LEN);
         } 
         
         else if (strncasecmp(cmd,"STOP",MAX_CMD_LEN)==0) {
@@ -506,13 +538,17 @@ int main(int argc, char *argv[]) {
             run = 0;
             stop_threads(args, thread_id, nthread_cur);
             nthread_cur = 0;
+            strncpy(prev_cmd, cmd, MAX_CMD_LEN);
         } 
         
         else {
             // Unknown command
             printf("Unrecognized command '%s'\n", cmd);
         }
-    }
+#ifndef OLD_CTRL
+        } // handle new command
+#endif
+    } // main loop
 
     /* Stop any running threads */
     run = 0;
