@@ -24,6 +24,7 @@ void usage() {
             "  -q, --quiet\n"
             "  -c, --create\n"
             "  -d, --delete\n"            
+            "  -S, --status\n"
             "  -i n, --id=n  (1)\n"
             "  -s n, --size=n (32M)\n"
             "  -n n, --nblock=n (24)\n"
@@ -38,6 +39,7 @@ int main(int argc, char *argv[]) {
         {"quiet",  0, NULL, 'q'},
         {"create", 0, NULL, 'c'},
         {"delete", 0, NULL, 'd'},        
+        {"status", 0, NULL, 'S'},
         {"id",     1, NULL, 'i'},
         {"size",   1, NULL, 's'},
         {"nblock", 1, NULL, 'n'},
@@ -50,7 +52,8 @@ int main(int argc, char *argv[]) {
     int blocksize = 32;
     int nblock = 24;
     int deletebuf=0;
-    while ((opt=getopt_long(argc,argv,"hqcdi:s:n:",long_opts,&opti))!=-1) {
+    int dostatus=0;
+    while ((opt=getopt_long(argc,argv,"hqcdSi:s:n:",long_opts,&opti))!=-1) {
         switch (opt) {
             case 'c':
                 create=1;
@@ -71,6 +74,11 @@ int main(int argc, char *argv[]) {
                 deletebuf=1;
                 create=0;
                 break;                
+            case 'S':
+                deletebuf=0;
+                dostatus=1;
+                create=0;
+                break;
             case 'h':
             default:
                 usage();
@@ -124,6 +132,17 @@ int main(int argc, char *argv[]) {
             }
             printf("sems deleted successfully\n");            
             exit (rtnval);
+        }
+        else if(dostatus)
+        {
+            size_t n = db->n_block + 1;
+            char * s = malloc(n);
+            if(s)
+            {
+                guppi_databuf_str_status(db, s, n);
+                printf("%d %s\n", db_id, s);
+                free(s);
+            }
         }
     }
     
