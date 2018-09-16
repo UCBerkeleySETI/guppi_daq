@@ -22,9 +22,6 @@ void print_usage(char *argv[]) {
 
 
 
-/* 03/13 - edit to do optimized inplace quantization */
-
-                                     
 int main(int argc, char *argv[]) {
 	struct guppi_params gf;
     struct psrfits pf;

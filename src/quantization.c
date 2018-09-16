@@ -23,7 +23,7 @@
 /* pf->hdr.nbits and pf->sub.bytes_per_subint are updated to reflect changes		*/
 /* quantization scheme described at http://seti.berkeley.edu/kepler_seti_quantization  	*/
 
-inline int quantize_2bit(struct psrfits *pf, double * mean, double * std) {
+int quantize_2bit(struct psrfits *pf, double * mean, double * std) {
 
 register unsigned int x,y;
 unsigned int bytesperchan;
