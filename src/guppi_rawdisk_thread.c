@@ -145,6 +145,7 @@ void guppi_rawdisk_thread(void *_args) {
 
     /* Loop */
     int packetidx=0, npacket=0, ndrop=0, packetsize=0, blocksize=0, len=0;
+    int packetstop=0;
     int orig_blocksize=0;
     int curblock=0;
     int block_count=0, blocks_per_file=128, filenum=0;
@@ -180,6 +181,7 @@ void guppi_rawdisk_thread(void *_args) {
         hgeti4(ptr, "PKTSIZE", &packetsize);
         hgeti4(ptr, "NPKT", &npacket);
         hgeti4(ptr, "NDROP", &ndrop);
+        hgeti4(ptr, "PKTSTOP", &packetstop);
 
         /* Check for re-quantization flag */
         int nbits_req = 0;
@@ -254,8 +256,34 @@ void guppi_rawdisk_thread(void *_args) {
             }
         } else if (got_packet_0==0 && packetidx==0) {
             guppi_warn("guppi_rawdisk_thread", "Got packet index 0, but sst_valid was 0! (missed scan?)");
+        } else if (got_packet_0 && (!gp.stt_valid || packetidx >= packetstop)) {
+            char msg[1024];
+            if(!gp.stt_valid && packetidx >= packetstop) {
+                sprintf(msg,
+                    "stt_valid==0 and PKTIDX %d >= PKTSTOP %d, dropping block",
+                    packetidx, packetstop);
+            }
+            else if(!gp.stt_valid) {
+                sprintf(msg, "stt_valid==0, dropping block");
+            }
+            else if(packetidx >= packetstop) {
+                sprintf(msg, "PKTIDX %d >= PKTSTOP %d, dropping block",
+                    packetidx, packetstop);
+            }
+            guppi_warn("guppi_rawdisk_thread", msg);
+
+            /* Mark as free */
+            guppi_databuf_set_free(db, curblock);
+
+            /* Go to next block */
+            curblock = (curblock + 1) % db->n_block;
+
+            /* Check for cancel */
+            pthread_testcancel();
+
+            continue;
         }
-        
+
         /* See if we need to open next file */
         if (block_count >= blocks_per_file) {
             close(fdraw);
