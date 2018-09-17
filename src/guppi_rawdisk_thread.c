@@ -165,6 +165,7 @@ void guppi_rawdisk_thread(void *_args) {
 
         /* Wait for buf to have data */
         rv = guppi_databuf_wait_filled(db, curblock);
+        if (!run) break;
         if (rv!=0) continue;
 
         /* Read param struct for this block */
@@ -260,14 +261,14 @@ void guppi_rawdisk_thread(void *_args) {
             char msg[1024];
             if(!gp.stt_valid && packetidx >= packetstop) {
                 sprintf(msg,
-                    "stt_valid==0 and PKTIDX %d >= PKTSTOP %d, dropping block",
+                    "stt_valid==0 and PKTIDX %d >= PKTSTOP %d, dropping block and exiting",
                     packetidx, packetstop);
             }
             else if(!gp.stt_valid) {
-                sprintf(msg, "stt_valid==0, dropping block");
+                sprintf(msg, "stt_valid==0, dropping block and exiting");
             }
             else if(packetidx >= packetstop) {
-                sprintf(msg, "PKTIDX %d >= PKTSTOP %d, dropping block",
+                sprintf(msg, "PKTIDX %d >= PKTSTOP %d, dropping block and exiting",
                     packetidx, packetstop);
             }
             guppi_warn("guppi_rawdisk_thread", msg);
@@ -278,10 +279,10 @@ void guppi_rawdisk_thread(void *_args) {
             /* Go to next block */
             curblock = (curblock + 1) % db->n_block;
 
-            /* Check for cancel */
-            pthread_testcancel();
+            /* Stop other threads too! */
+            run = 0;
 
-            continue;
+            break;
         }
 
         /* See if we need to open next file */
