@@ -337,6 +337,7 @@ void *guppi_pktsock_thread_codd(void *_args) {
     /* Misc counters, etc */
     char *curdata=NULL, *curheader=NULL;
     unsigned long long start_seq_num=0, stop_seq_num=0, seq_num, last_seq_num=2048, nextblock_seq_num=0;
+    int scan;
     long long seq_num_diff;
     double drop_frac_avg=0.0;
     const double drop_lpf = 0.25;
@@ -481,12 +482,22 @@ void *guppi_pktsock_thread_codd(void *_args) {
             stop_seq_num = start_seq_num + packets_per_block * dwell_blocks;
             hputi8(st.buf, "PKTSTOP", stop_seq_num);
 
+            // Get current scan number
+            hgeti4(st.buf, "SCAN", &scan);
+
             guppi_status_unlock_safe(&st);
 
             /* Finalize first block, and push it off the list.
              * Then grab next available block.
              */
-            if (fblock->block_idx>=0) finalize_block(fblock);
+            if (fblock->block_idx>=0) {
+              // Update SCAN number in block (sometimes the very first block of
+              // a scan does not get the number of the newly started scan when
+              // the first packet arrives for that scan)
+              curheader = guppi_databuf_header(db, fblock->block_idx);
+              hputi4(curheader, "SCAN", scan);
+              finalize_block(fblock);
+            }
             block_stack_push(blocks, nblock);
             increment_block(lblock, seq_num);
             curdata = guppi_databuf_data(db, lblock->block_idx);
