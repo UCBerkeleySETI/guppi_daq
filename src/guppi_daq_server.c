@@ -349,7 +349,7 @@ int main(int argc, char *argv[]) {
 
     struct timespec sleep_time = {
       .tv_sec = 0,
-      .tv_nsec = 200 * 1000 * 1000 // 200 ms
+      .tv_nsec = 400 * 1000 * 1000 // 400 ms
     };
 
     /* Loop over recv'd commands, process them */
@@ -359,6 +359,8 @@ int main(int argc, char *argv[]) {
         // Check to see if threads have exited, if so, stop them
         if (check_thread_exit(args, nthread_cur)) {
             run = 0;
+            // Give threads time to respond to run=0
+            nanosleep(&sleep_time, NULL); // TODO use second param, check return value
             stop_threads(args, thread_id, nthread_cur);
             nthread_cur = 0;
         }
@@ -463,6 +465,8 @@ int main(int argc, char *argv[]) {
             // Exit program
             printf("Exit\n");
             run = 0;
+            // Give threads time to respond to run=0
+            nanosleep(&sleep_time, NULL); // TODO use second param, check return value
             stop_threads(args, thread_id, nthread_cur);
             nthread_cur = 0;
             cmd_wait=0;
@@ -536,6 +540,8 @@ int main(int argc, char *argv[]) {
             // Stop observations
             printf("Stop observations\n");
             run = 0;
+            // Give threads time to respond to run=0
+            nanosleep(&sleep_time, NULL); // TODO use second param, check return value
             stop_threads(args, thread_id, nthread_cur);
             nthread_cur = 0;
             strncpy(prev_cmd, cmd, MAX_CMD_LEN);
@@ -552,6 +558,8 @@ int main(int argc, char *argv[]) {
 
     /* Stop any running threads */
     run = 0;
+    // Give threads time to respond to run=0
+    nanosleep(&sleep_time, NULL); // TODO use second param, check return value
     if(nthread_cur > 0) {
         stop_threads(args, thread_id, nthread_cur);
     }
